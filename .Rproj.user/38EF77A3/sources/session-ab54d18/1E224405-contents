@@ -1,0 +1,569 @@
+# Preparation
+normalize = function(las, quantile=c(0.001)) {
+  ground = quantile(las$Z, quantile)
+  las@data[, Z := las$Z - ground]
+  las = lidR::las_update(las)
+  return(las)
+}
+
+get_coords = function(las, zmin=1, zmax=2) {
+  las$Z = las$Z - quantile(las$Z, 0.0001)
+  las = lidR::filter_poi(las, Z > zmin & Z < zmax)
+  X = mean(las$X)
+  Y = mean(las$Y)
+  proj = sf::st_crs(las)[['input']]
+  return(list(c(X,Y),proj))
+}
+
+
+# HT
+get_ht = function(las, quantiles = c(0.001, 0.999)) {
+  x = quantile(las$Z, quantiles)
+  x = as.numeric(diff(x))
+  return(x)
+}
+#max width from two angles
+get_wd = function(las, quantiles = c(0.001, 0.999)) {
+  x = as.numeric(diff(quantile(las$X, quantiles)))
+  y = as.numeric(diff(quantile(las$Y, quantiles)))
+  wd = mean(c(x,y))
+  return(wd)
+}
+
+#DBH
+get_dbh = function(las, int.threshold=41000, select_n = 50, vert.threshold=0.9) {
+  if(is.null(int.threshold)) int.threshold = get_intensity_threshold(las)$threshold
+  bole = lidR::filter_poi(las, Intensity > int.threshold)
+  eigen = spanner::eigen_metrics(bole)$Verticality
+  bole = lidR::add_lasattribute(bole, eigen, 'Verticality', 'Verticality')
+  bole = lidR::filter_poi(bole, Z> 1 & Z < 2 & Verticality > vert.threshold)
+  dbh = TreeLS::shapeFit(bole, shape='cylinder', n = select_n, n_best = 3)
+  dbh = dbh$Radius*200
+  return(as.numeric(dbh))
+}
+
+# CBH
+#seg: ignored if area_profile is not NULL
+#q: lower quantile to get area profile to reduce impact of noise
+#sustain: threshold must be exceed twice in a row (eliminate dead branches)
+get_cbh = function(las, threshold = 0.5, area_profile=NULL,
+                   seg = 0.25, q = 0.02, sustain = 2) {  
+  if(is.null(area_profile)) area_profile = get_area_profile(las, seg=seg, q=0.02)
+  area_profile$diff = NA
+  for(i in 1:(nrow(area_profile)-1)) area_profile$diff[i] = area_profile$width[i+1] - area_profile$width[i]
+  
+  # Which segments have are greater than threshold width?
+  area_profile$wide = area_profile$diff > threshold | area_profile$width > 3*threshold
+  #when is width sustained? i.e., greater than 2 segments
+  x = which(area_profile$wide)
+  d = sapply(2:length(x), function(i) x[i] - x[i-1])  
+  d = d == 1
+  cbh = area_profile$bottom[x[d][1]]
+  cbh = cbh + seg/2 # return the midpoint
+  return(cbh)
+}
+
+# Get crown volumen using ITSMe package after voxelzing to increase speed
+get_volume = function(las, res = 0.1, alpha=1, plot=FALSE) {
+  vox = lidR::voxelize_points(las, res = res) 
+  vox = vox@data[, c('X','Y','Z')]
+  vol = suppressWarnings(ITSMe::alpha_volume_pc(vox, alpha = alpha, plot=plot) )
+  return(vol)
+}
+
+#get internode distances for primary branches
+get_internode_dists_primary = function(qsm) {
+  trunk_sections = dplyr::filter(qsm, branching_order == 0)
+  x = dplyr::filter(qsm, branching_order == 1)
+  x = dplyr::filter(x, parent_ID %in% trunk_sections$segment_ID)
+  x = dplyr::mutate(x, mid.Z = (startZ+endZ)/2)
+  x = dplyr::arrange(x, mid.Z)
+  x = dplyr::mutate(x, diff = NA)
+  if(nrow(x) < 2) return(NA) #requires 2 branches to calculate
+  for(i in 2:nrow(x)) {x$diff[i] = x$mid.Z[i]-x$mid.Z[i-1]}
+  return(x$diff[-1])
+}
+
+# get tilt from tree base to center of mass, in degrees
+get_com_tilt = function(qsm) {
+  com = get_center_of_mass(qsm)
+  qsm = dplyr::arrange(qsm, startZ)
+  bot = as.numeric(qsm[1, c('startX', 'startY', 'startZ')])
+  com = com[1:3]
+  dist = dist(rbind(bot,com))
+  plunge = asin(as.numeric((bot[3] - com[3]) / dist))
+  plunge.deg = (plunge + 90*pi/180) * 180/pi # difference from 90deg
+  return(plunge.deg)
+}
+
+# Get taper model for trunk sections below DBH r ~ ksqt()
+
+get_taper_model = function(qsm,
+                           formula = r_rel ~ k*ht_rel^i + 1) {
+  qsm = dplyr::filter(qsm, branching_order == 0)
+  hts = c(qsm$startZ, tail(qsm$endZ,1)) #all hts along bole and top
+  if(any(hts<0)) hts = hts - min(hts)
+  radius = c(qsm$radius_cyl, tail(qsm$radius_cyl,1)) 
+  r_rel = radius/max(radius)
+  ht_rel = hts / max(hts)
+  qsm = data.frame(r_rel=r_rel, ht_rel=ht_rel)
+  plot(r_rel~ht_rel,data=qsm, asp=1)
+  mod = nls(formula, qsm, start = list(k=-1,i=2))
+  return(mod)
+}
+
+get_intensity_threshold = function(las, bounds = c(35000,48000)) {
+  int = las$Intensity 
+  int = int[int > bounds[1] & int < bounds[2]]
+  int = hist(int,breaks=100, plot=FALSE)
+  int = data.frame(intensity = int$mids, dens = int$density)
+  int$dens = int$dens / max(int$dens)
+  #mod = nls(dens ~ a*intensity + b*intensity^2 + c, data = int, start=list(a=-0.001,b=0.01,c=1))
+  mod = lm(dens ~ intensity + I(intensity^2) + I(intensity^3), data = int)
+  int$pred = predict(mod, int)
+  threshold = int$intensity[which.min(int$pred)]
+  message('Intensity threshold automatically detected: ', threshold)
+  
+  #return a plot
+  int = hist(las$Intensity,breaks=100,plot=FALSE)
+  int = data.frame(intensity = int$mids, dens = int$density)
+  a = ggplot2::ggplot(int, ggplot2::aes(x=intensity,y=dens))+ggplot2::geom_line() +
+    ggplot2::theme_classic() + 
+    ggplot2::geom_vline(xintercept = threshold, color='blue', linewidth=1)
+  return(list(threshold=threshold, plot=a))
+}
+
+#las = tree las
+#seg = size of slice segments to get area
+#q gets the quantile of width to help adjust for noise
+get_area_profile = function(las, seg=.25, q = 1, angle = 0) {
+  pc = rotate_las_z(las, angle)
+  HT = get_ht(las)
+  ground = min(las$Z)
+  myfun = function(slice_min) {
+    slice_max = slice_min + seg
+    slice = dplyr::filter(pc, z > slice_min & z <= slice_max)
+    wid = diff(quantile(slice$x, probs = c(1-q,q)))
+    area = wid * seg
+    return(tibble::tibble(bottom = slice_min, top = slice_max, width = wid, area = area))
+  }
+  output = do.call(rbind, lapply(seq(ground,HT,by=seg), function(i) myfun(i)))
+  output$angle = angle
+  return(output)
+}
+
+rotate_las_z = function(las, deg) {
+  pc = las@data[,c('X','Y','Z')]
+  pc = recexcavAAR::rotate(pc$X, pc$Y, pc$Z, degrx = 0, degry = 0, degrz = deg)
+  return(pc)
+}
+
+# Get area profiles for a list of angles with rotation
+get_area_profile_rotation = function(las, angles){
+  pb = txtProgressBar(min = 0, max = length(angles), initial = 0, style=3) 
+  setTxtProgressBar(pb,0)
+  out = list()
+  for(i in 1:length(angles)) {
+    df = get_area_profile(normalize(las), angle = angles[i])
+    out[[length(out)+1]] = df
+    setTxtProgressBar(pb,i)
+  }
+  out = do.call(rbind, out)       
+  return(out)       
+}
+
+get_porosity = function(las, res = 0.1, angle = 0) {
+  # Make a voxel hull, and get the ratio of its area relative to same 
+  # hull with holes filled.
+  tree_pc = rotate_las_z(las, angle)
+  colnames(tree_pc) = c('X', 'Y', 'Z')
+  tree_pc$Y = tree_pc$Z #  hack to use raster funcition, lay on its side. (Z == Y)
+  header = lidR::LASheader(tree_pc)
+  flat_las = suppressWarnings(lidR::LAS(tree_pc, header))
+  flat_las = lidR::voxelize_points(flat_las, res)
+  proj = lidR::rasterize_density(flat_las, res = res)
+  proj = proj > 0
+  proj[proj == 0] = NA
+  proj = sf::st_as_sf(terra::as.polygons(proj))
+  hull_area_porous = sf::st_area(proj)
+  cvx_hull = convex_hull(tree_pc)
+  hull_area_convex = sf::st_area(cvx_hull)
+  porosity = hull_area_porous/hull_area_convex
+  return(list(porosity=porosity, convex_hull=cvx_hull, voxel_hull = proj))
+}
+
+
+convex_hull = function(pc) {
+  #vertical projection on X-Z plane
+  hull = pc[,c('X', 'Z')]
+  hull = sf::st_as_sf(hull, coords = c('X', 'Z'))
+  hull = sf::st_convex_hull(sf::st_union(hull))
+  return(hull)
+}
+
+
+get_lever_arm = function(profile) {
+  profile = dplyr::mutate(profile, 
+                   midpoint = (bottom+top)/2,
+                   lever_arm = area * midpoint)
+  profile = dplyr::group_by(profile, angle)
+  lever_arm = dplyr::summarize(profile, sum = sum(lever_arm))
+  return(lever_arm)
+}
+
+center_bole = function(las) {
+  # center bole on origin (0,0)
+  tree_position = ITSMe::tree_position_pc(las@data[,c('X','Y','Z')])
+  x_offset = tree_position[1]
+  y_offset = tree_position[2]
+  las@data[, X := las$X - x_offset]
+  las@data[, Y := las$Y - y_offset]
+  lidR::las_update(las)
+  return(las)
+}
+
+#Clear vegetation around bole
+clear_vegetation = function(las, Z.threshold = 2) {
+  #identify points that are part of the stem
+  las = TreeLS::stemPoints(las) 
+  #rm low non-stem pts.
+  las = lidR::filter_poi(las, Z >  Z.threshold | (Z <  Z.threshold & Stem == TRUE)) 
+  return(las)
+}
+
+run_qsm = function(las, unique_id, path, template_dynamic_script, 
+                   n_cores = 5, int.threshold=NULL, wait=TRUE, exit=TRUE) {
+  unique_id = gsub('-', '_', unique_id)
+  out_file = paste0(path, unique_id, '_qsm.mat')
+    if(file.exists(out_file)) {
+      warning('qsm output already exists')
+      return(out_file)
+    }
+  path = gsub('/', '\\\\\\\\', path) # really don't know why you need all these, but you do.
+
+  # filter by itensity and volexize to 2 cm
+  if(is.null(int.threshold)) int.threshold = get_intensity_threshold(las)$threshold
+  las = lidR::filter_poi(las, Intensity > int.threshold)
+  las = lidR::decimate_points(las, lidR::random_per_voxel(res=0.02))
+  
+  #export .mat
+  pc = dplyr::select(las@data, X,Y,Z)
+  mat_file = paste0(path, '\\', unique_id, '.mat')
+  R.matlab::writeMat(mat_file, tree=as.matrix(pc))
+  
+  # Create mat lab script with appropriate file names
+  txt = suppressWarnings(readtext::readtext(template_dynamic_script)$text)
+  txt = gsub('%%TREE_MAT_PATH%%', gsub('.mat$', '', mat_file), txt)
+  txt = gsub('%%TREE_ID%%', unique_id, txt)
+  txt = gsub('%%OUT_DIR%%', path, txt)
+  txt = gsub('%%N_CORES%%', n_cores, txt)
+  
+  m_file = paste0(path, '\\', unique_id, '.m')
+  writeLines(txt, con=m_file)
+  
+  #run in matlab
+  options = '-nosplash -nodesktop -r '
+  if(exit) cmd = paste0("matlab ", options, "\"run('", gsub("\\\\", "//", m_file), "'); exit\"")
+  if(!exit) cmd = paste0("matlab ", options, "\"run('", gsub("\\\\", "//", m_file), "');\"")
+  print(cmd)
+  system(cmd, intern=TRUE)
+  if(wait) while(!file.exists(out_file)) Sys.sleep(2)
+  if(file.exists(out_file)) message('QSM file created successfully')
+  return(out_file)
+} 
+
+# Load and clean
+load_and_clean_las = function(fn) {
+  las = normalize(lidR::readLAS(fn))
+  las = center_bole(las)
+  las = lidR::filter_duplicates(las)
+  las = lidR::classify_noise(las, lidR::ivf(res=0.1,n=3))
+  las = lidR::filter_poi(las, Classification != lidR::LASNOISE)
+  las = clear_vegetation(las, Z.threshold=2)
+  return(las)
+}
+
+# get center of mass (horizontal and verticaL)
+get_center_of_mass = function(qsm) {
+  qsm = dplyr::mutate(qsm,
+                      X.mid = (startX + endX)/2,
+                      Y.mid = (startY + endY)/2,
+                      Z.mid = (startZ + endZ)/2)
+  qsm = dplyr::summarize(qsm,
+                  com.X = weighted.mean(X.mid, volume),
+                  com.Y = weighted.mean(Y.mid, volume),
+                  com.Z = weighted.mean(Z.mid, volume),
+                  com.horiz = dist(rbind(c(0,0), c(com.X,com.Y))),
+                  com.horiz = as.numeric(com.horiz))
+  return(qsm)
+}
+
+# get branch metrics of skewness and volume weighted median (using 1 cm bins)
+get_branch_skewness = function(qsm) {
+  if(nrow(qsm) < 2) return(NA) # need multiple branches to get a distribution
+  qsm$volume_mL = qsm$volume * 100*100*100
+  qsm$diam = qsm$radius_cyl*200
+  qsm$midpoint = floor(qsm$diam) + 0.5
+  br = seq(0, max(qsm$diam) + 1, by = 1)
+  qsm$cls = cut(qsm$diam, breaks= br)
+  qsm = dplyr::summarize(dplyr::group_by(qsm,cls), midpoint = midpoint[1], volume_mL = sum(volume_mL))
+  x = lapply(1:nrow(qsm), function(i) rep(qsm$midpoint[i], round(qsm$volume_mL[i])))
+  x = do.call('c', x)
+  skewness = 3*(mean(x) - median(x)) / sd(x)
+  weighted.median = median(x)
+  return(list(skewness = skewness, vol.weighted.median = weighted.median))
+}
+
+get_per_volume_branches = function(qsm) {
+  qsm = dplyr::filter(qsm, branching_order > 0)
+  if(nrow(qsm)==0) return(NA)
+  tot.vol = dplyr::summarize(qsm, volume = sum(volume))
+  smb.vol = dplyr::summarize(dplyr::filter(qsm, radius_cyl< 0.01), volume = sum(volume))
+  lgb.vol = dplyr::summarize(dplyr::filter(qsm, radius_cyl >= 0.04), volume = sum(volume))
+  return(list(per.smvolume = smb.vol/tot.vol*100,
+              per.lgvolume = lgb.vol/tot.vol*100))  
+}
+
+get_biomass_from_qsm = function(qsm, spp, las, CBH=NULL) {
+  spp = match.arg(spp, c('PINPAL', 'PINELL', 'PINECH', 'PINDEN'))
+  trunk_qsm = dplyr::filter(qsm, branching_order == 0)
+  branch_qsm = dplyr::filter(qsm, branching_order == 1)
+  if(is.null(CBH)) CBH = get_cbh(las, threshold = 0.5)
+  
+  # applyl biomass equations for trunk_sections winching experiment
+  if(spp %in% c('PINECH', 'PINDEN')) {
+    warning(paste0('no biomass equation included for', spp, '. Using PINPAL instead')) 
+    spp = 'PINPAL'
+  }
+  
+  if(spp=='PINELL') {
+    trunk_bm = function(v_m3) 839.6 * v_m3 + 1.618
+    branch_bm = function(ba_cm2) 0.304 * ba_cm2 - 1.947
+  }
+  if(spp=='PINPAL') {
+    trunk_bm = function(v_m3) 963.5 * v_m3 - 2.645
+    branch_bm = function(ba_cm2) 0.4188 * ba_cm2 - 3.948
+  }
+
+  # Find sections < 8 cm
+  terminal_branch.ht = max(dplyr::filter(trunk_qsm, radius_cyl > 0.04)$startZ)
+  trunk_sections = dplyr::filter(trunk_qsm, startZ <= terminal_branch.ht)
+  
+  # pool lower sections to reach range of trunk section biomass eq. (0.02 - 0.2 m3)
+  v = trunk_sections$volume
+  z = (trunk_sections$endZ + trunk_sections$startZ) / 2
+  v_out = v_tmp = z_tmp = z_out = c()
+  for(i in 1:length(v)) {
+    v_tmp = c(v_tmp, v[i])
+    z_tmp = c(z_tmp, z[i])
+    if(sum(v_tmp) > 0.02) {
+      v_out = c(v_out, sum(v_tmp))
+      z_out = c(z_out, mean(z_tmp)) # get mean height
+      v_tmp = z_tmp = c()
+    }
+    # if last section doesn't meet requirement, then add it on to previous
+    if(i == length(v) & sum(v_tmp) <= 0.02) {
+      v_out[length(v_out)+1] = sum(v_tmp)
+      z_out[length(z_out)+1] = mean(z_tmp)
+    }
+  }
+  bole.out = data.frame(segment = 'trunk', 
+                        ht_m = z_out, 
+                        mass_kg = trunk_bm(v_out))
+  
+  # Get terminal branch mass.
+  terminal_branch = dplyr::filter(trunk_qsm, startZ > terminal_branch.ht)[1,]
+  term.out = data.frame(segment = 'terminus',
+                        ht_m = with(terminal_branch, mean(startZ, endZ)),
+                        mass_kg = branch_bm((terminal_branch$radius_cyl*200)^2*pi))
+  
+  # Get biomass of primary branches (attached to main trunk and in crown)
+  primary_branches = dplyr::filter(branch_qsm, parent_ID %in% trunk_sections$segment_ID)
+  primary_branches = dplyr::filter(primary_branches, startZ > CBH)
+  primary_branches$ba_cm2 = (primary_branches$radius_cyl*200)^2 * pi
+  primary_branches$mass_kg = branch_bm(primary_branches$ba_cm2)
+  if(nrow(primary_branches)==0) {
+    branch.out = NULL
+    } else {
+      branch.out = data.frame(segment='branch', 
+                            ht_m = primary_branches$startZ,
+                            mass_kg = primary_branches$mass_kg)
+      }
+  bm.out = rbind(bole.out, term.out, branch.out)
+  bm.summary = dplyr::summarize(dplyr::group_by(bm.out, segment), mass = sum(mass_kg))
+  return(list(mass.summary = bm.summary, mass.out = bm.out))
+}
+
+get_qsm_inputs_from_xml = function(xml) {
+  root = XML::xmlRoot(XML::xmlParse(xml))
+  names = as.vector(names(root))
+  vals = data.frame(t(XML::xmlToDataFrame(xml)))
+  colnames(vals) = names
+  out = data.frame(input=names, value=t(vals))
+  rownames(out)=NULL
+  colnames(out) = c('input', 'value')
+  out = dplyr::slice(out, c(1:7))
+}
+
+qsm_only_fun = function(fn, n_cores= 5, int.threshold=NULL, name=NULL, wait=TRUE) {
+  las = load_and_clean_las(fn)
+  if(is.null(name)) name = gsub('.laz|.laz', '', gsub('-', '_', paste0(basename(dirname(fn)), '-', basename(fn))), ignore.case=TRUE)
+  qsm_file = run_qsm(las = las, unique_id = name, 
+                     path = output_qsm_dir, n_cores = n_cores,
+                     template_dynamic_script = 'analysis/dynamic_QSM_script_template.m',
+                     int.threshold = int.threshold, wait=wait)
+  return(qsm_file)
+}
+
+# FUNCTIONS TO MAKE DIAGNOSTIC PLOTS... THEY CNA BE MOVED WHEN FINALIZED
+get_las_multiview_plot = function(las, res=0.1) {
+  las_thin = lidR::decimate_points(las, lidR::random_per_voxel(res=res))
+  ggsettings = function(x) {
+    x = x + ggplot2::geom_point(size=0.1)  + 
+      ggplot2::coord_fixed() +
+      ggplot2::theme_bw() + 
+      ggplot2::theme(plot.background = ggplot2::element_rect(fill = "black", colour = "black"),
+            panel.background = ggplot2::element_rect(fill = "black", colour = "black"),
+            panel.grid = ggplot2::element_blank(),
+            legend.position = 'none') +
+      ggplot2::scale_color_viridis_c(direction = 1, option='G') +
+      ggplot2::labs(y=ggplot2::element_blank(), x=ggplot2::element_blank()) +
+      ggplot2::theme(axis.text = ggplot2::element_text(colour = '#FFFFFF'),
+            axis.ticks = ggplot2::element_line(color='#FFFFFF'),
+            axis.line = ggplot2::element_line(color='#FFFFFF'))
+    return(x)
+  }
+  
+  v1 = ggsettings(ggplot2::ggplot(las_thin@data, ggplot2::aes(x=X,y=Z, color=Y)))
+  v2 = ggsettings(ggplot2::ggplot(las_thin@data, ggplot2::aes(x=Y,y=Z, color=X)))
+  v3 = ggsettings(ggplot2::ggplot(dplyr::filter(las@data,Z<3), ggplot2::aes(x=X,y=Z, color=Y)))
+  v4 = ggsettings(ggplot2::ggplot(las_thin@data, ggplot2::aes(x=X,y=Y, color=Z)))
+  
+  profiles = ggpubr::ggarrange(v1, v2, v4, nrow=1, widths = c(0.3,0.3,0.4),
+                               labels=LETTERS, font.label = list(color = "white")) +
+  ggpubr::bgcolor('#000000') 
+  
+  return(profiles)
+}
+
+#diagnostic plot 2
+get_crown_metrics_plot = function(las, HT, CBH, CR_WID, DBH, res=0.1) {
+  las_thin = lidR::decimate_points(las, lidR::random_per_voxel(res=res))
+  marker_df = data.frame(
+    x = c(CR_WID/-2, CR_WID/2, 0, 0, min(las$X)+2, min(las$X)+2, min(las$X)+3, min(las$X)+3, DBH/-200, DBH/200),
+    y = c(HT-(HT-CBH)/2, HT - (HT-CBH)/2, HT, CBH, 0, HT, 0, CBH, 1.5, 1.5),
+    name = sort(rep(letters[1:5],2)),
+    color = c(rep('red',4), rep('black', 4), rep('blue',2)))
+  
+  crown_met = ggplot2::ggplot() +
+    ggplot2::geom_point(data = las_thin@data, ggplot2::aes(x=X, y=Z), size=0.05, color=grey(0.4))  + 
+    ggplot2::coord_fixed() +
+    ggplot2::theme_bw() + ggplot2::geom_line(data = marker_df, ggplot2::aes(x=x,y=y,group=name, color=color), 
+                           linewidth=0.5, arrow = ggplot2::arrow(length=ggplot2::unit(.1,"cm"), angle=90, ends="both")) +
+    ggplot2::theme(legend.position='none') + ggplot2::labs(x=ggplot2::element_blank(), y=ggplot2::element_blank()) +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.grid = ggplot2::element_blank(),
+          legend.position = 'none')
+}
+
+get_hull_plot = function(crown, res=0.1) {
+  hulls = get_porosity(crown, res=0.1) # get hulls for plotting later
+  x = ggplot2::ggplot() + ggplot2::geom_sf(data=hulls$voxel_hull, fill='chartreuse4') + 
+    ggplot2::geom_sf(data=hulls$convex_hull, fill=NA, linewidth=1, linetype='dashed', color=grey(0.8)) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.grid = ggplot2::element_blank()) +
+    ggplot2::labs(y=ggplot2::element_blank(), x=ggplot2::element_blank()) +
+    ggplot2::theme(axis.text = ggplot2::element_text(colour = '#FFFFFF'),
+          axis.ticks = ggplot2::element_line(color='#FFFFFF'),
+          axis.line = ggplot2::element_line(color='#FFFFFF'))
+  return(x)
+}
+
+get_taper_fig = function(qsm, taper_mod, CBH) {
+  qsm = dplyr::filter(qsm, branching_order==0)
+  ht = c(qsm$startZ, tail(qsm$endZ,1))
+  dbh = c(qsm$radius_cyl, tail(qsm$radius_cyl,1))*200
+  qsm = data.frame(ht=ht,dbh=dbh, radius_cyl=dbh/200)
+  #qsm = dplyr::mutate(qsm, ht=(startZ+endZ)/2,
+  #                    dbh = radius_cyl * 200)
+  x = data.frame(ht_rel = seq(0,1,0.01))
+  x$r_rel = predict(taper_mod, x)
+  x$radius_cyl = x$r_rel * max(qsm$radius_cyl)
+  x$ht = x$ht_rel * max(qsm$ht)
+  x$dbh = x$radius_cyl * 200
+  out = ggplot2::ggplot(data=qsm, ggplot2::aes(x=ht, y=dbh)) + ggplot2::geom_point(color='white', alpha=0.7) +
+    ggplot2::geom_line(data=x, color='cyan') +
+    ggplot2::labs(x='tree height (m)', y='tree diameter (cm)') +
+    ggplot2::theme_bw() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.grid = ggplot2::element_blank()) +
+    ggplot2::theme(axis.text = ggplot2::element_text(colour = 'white'),
+          axis.ticks = ggplot2::element_line(color='white'),
+          axis.line = ggplot2::element_line(color='white'),
+          axis.title = ggplot2::element_text(colour = "white"))
+  return(out)
+}
+
+get_branch_distribution_plot = function(qsm) {
+  qsm = dplyr::filter(qsm, branching_order > 0)
+  if(nrow(qsm) < 2) return(NA) # need multiple branches to get a distribution
+  qsm$volume_mL = qsm$volume * 100*100*100
+  qsm$diam = qsm$radius_cyl*200
+  qsm$midpoint = floor(qsm$diam) + 0.5
+  br = seq(0, max(qsm$diam) + 1, by = 1)
+  qsm$cls = cut(qsm$diam, breaks= br)
+  qsm = dplyr::summarize(dplyr::group_by(qsm,cls), midpoint = midpoint[1], volume_mL = sum(volume_mL))
+  x = ggplot2::ggplot(data=qsm, ggplot2::aes(y=volume_mL, x=cls)) + ggplot2::geom_col(fill = grey(0.7)) +
+    ggplot2::labs(x='Branch diameter (cm)', y = 'Branch volume (mL)') +
+    ggplot2::theme_bw() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.background = ggplot2::element_rect(fill = "black", colour = "black"),
+          panel.grid = ggplot2::element_blank()) +
+    ggplot2::theme(axis.text = ggplot2::element_text(colour = 'white'),
+          axis.ticks = ggplot2::element_line(color='white'),
+          axis.line = ggplot2::element_line(color='white'),
+          axis.title = ggplot2::element_text(colour = "white"))
+  return(x)
+}
+
+get_diagnostic_plots = function(las, output, imgfn, tree.qsm, qsm_image, taper_mod, res=0.1) {
+  t = get_las_multiview_plot(las, res=res)
+  u = get_crown_metrics_plot(las, output$HT, output$CBH, output$CR_WID, output$DBH, res=res)
+  crown = lidR::filter_poi(las, Z > output$CBH)
+  v = get_hull_plot(crown, res=res)
+  w = get_taper_fig(tree.qsm, taper_mod)
+  x = get_branch_distribution_plot(tree.qsm)
+  y = ggpubr::ggarrange(t, u, v, widths = c(0.5, 0.2, 0.3), ncol=3, labels=c(NA, 'D', 'E'), font.label = list(color='white')) + ggpubr::bgcolor('black')
+  z = ggpubr::ggarrange(w, x, ncol=2, labels=c('G', 'H'), font.label = list(color='white')) + ggpubr::bgcolor('black') 
+  tmpfilea = tempfile(fileext='.jpg')
+  tmpfileb = tempfile(fileext='.jpg')
+  ggplot2::ggsave(tmpfilea, y, width = 10, height=4, dpi = 600)
+  ggplot2::ggsave(tmpfileb, z, width = 10/3*2, height=4, dpi = 600)
+  plottop = magick::image_read(tmpfilea)
+  plotbot = magick::image_read(tmpfileb)
+  unlink(tmpfilea); unlink(tmpfileb)
+  qsmimg = magick::image_negate(magick::image_read(qsm_image))
+  qsmimg = magick::image_scale(qsmimg, "X2400")
+  plotbot = magick::image_append((c(qsmimg, plotbot)))
+  plotbot = magick::image_scale(plotbot, '6000x')
+  plotbot = magick::image_annotate(plotbot, 'F', color='white', size=130, weight=700, location= '+50+0')
+  diagplot = magick::image_append(magick::image_scale(c(plottop, plotbot)), stack=TRUE)
+  diagplot = magick::image_append(c(plottop, plotbot), stack=TRUE)
+  diagplot = magick::image_negate(diagplot)
+  diagplot = magick::image_annotate(diagplot, name, size=130, location = '+4000')
+  magick::image_write(diagplot, imgfn) 
+  return(diagplot)
+}
+
+
+update_qsm_jpgs = function(m_file) {
+  options = '-nosplash -nodesktop -r '
+  cmd = paste0("matlab ", options, "\"run('", gsub("\\\\", "//", m_file), "'); exit\"")
+  print(cmd)
+  system(cmd, intern=TRUE, wait = TRUE)
+}
+
