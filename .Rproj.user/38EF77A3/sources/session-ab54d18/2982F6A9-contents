@@ -32,3 +32,33 @@ normalize_and_recenter_las = function(las, quantile=c(0.001)) {
   return(las)
 }
 
+# Function to set path of Tree qsm to use in other functions
+set_TREEQSM_PATH(path) = function(){
+  if(!dir.exists(path)) stop('invalid path')
+  assign(TREEQSM_PATH, path, envir = .GlobalEnv)
+}
+
+# Function to set path of  Matlab to use in other functions
+set_MATLAB(path) = function(){
+  if(!dir.exists(path)) stop('invalid path')
+  assign(MATLAB_PATH, path, envir = .GlobalEnv)
+}
+
+
+
+
+
+
+
+
+
+# Function to generate TreeQSM matlab script with specified parameters
+
+parameterize_treeqsm()
+
+
+
+
+
+
+
