@@ -1,16 +1,34 @@
-
-
-# Preparation
+#' Normalize and Recnter `LAS` object representing segmented tree.
+#'
+#' Function to normalize and recenter LAS object. Function calculates
+#' ground level based on the parameter specified by `quantile`,
+#' subtracts it from all `Z`. Similarly, the file is recentered based
+#' on the mean XY coordinates. For trees, the optional parameter
+#' `bole_height` can be used in which case the centroid is based only
+#' on points with `Z < bole_height`. This allows recentering to be
+#' based only on the tree bole, rather than including the crown.
+#' @param las `LAS` object from `lidR` package representing
+#' individually segmented tree
+#' @param quantile Z quantile at which grown level is specified since
+#' ground points may not be identifiable with common algorithms if
+#' ground points are removed during segmentation
+#' @param bole_height height of bole (in `LAS` units). If NULL, then
+#' entire object is recentered. If specified, only points with
+#' `Z < bole_height` are considered when finding the centroid.
+#' @importFrom lidR las_update filter_poi
+#' @importFrom stats quantile
+#' @export
 normalize_and_recenter_las = function(las, quantile=c(0.001)) {
   #normalize
-  ground_level = quantile(las$Z, quantile)
+  ground_level = stats::quantile(las$Z, quantile)
   las@data[, Z := las$Z - ground_level]
-
   #recenter
-  bole = filter_poi(las, Z < 3)
+  bole = lidR::filter_poi(las, Z < 3)
   centroid = c(mean(bole$X), mean(bole$Y))
-  las@data[, Y := las$Y - mean(bole$Y)]
-  las@data[, X := las$Y - mean(bole$X)]
+  las@data[, X := las$X - centroid[1]]
+  las@data[, Y := las$Y - centroid[2]]
+  #update LAS header
   las = lidR::las_update(las)
   return(las)
 }
+
