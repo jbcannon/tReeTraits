@@ -100,7 +100,7 @@ recenter_las = function(las, height = 1) {
 clean_las = function(las, Z.threshold = 1, bole_height=1, quantile=0.001) {
   las = normalize_las(las)
   #identify points that are part of the stem and remove them
-  las = TreeLS::stemPoints(las)
+  las = suppressMessages(TreeLS::stemPoints(las))
   las = lidR::filter_poi(las, Z >  Z.threshold | (Z <  Z.threshold & Stem == TRUE))
   #recenter on the bole.
   las = recenter_las(las)
@@ -125,3 +125,25 @@ set_MATLAB = function(path){
 
 # Function to generate TreeQSM matlab script with specified parameters
 treeQSM = function() {stop('matlab download is down')}
+
+#' Rotate `LAS` object about the `Z` axis
+#'
+#' Rotate `LAS` object about the `Z` axis for specified angle.
+#' @param las `LAS` object from `lidR` package representing
+#' individually segmented tree
+#' @param angle numeric - in degrees, rotation angle about Z axis.
+#' @examples
+#' library(lidR)
+#' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' plot(las)
+#' las = rotate_las_z(las, 90)
+#' plot(las)
+#' @importFrom recexcavAAR rotate
+#' @export
+rotate_las_z = function(las, angle) {
+  pc = las@data[,c('X','Y','Z')]
+  pc = recexcavAAR::rotate(pc$X, pc$Y, pc$Z, degrx = 0, degry = 0, degrz = angle)
+  return(pc)
+}
+
+
