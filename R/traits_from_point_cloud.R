@@ -24,6 +24,7 @@ get_height = function(las, quantiles = c(0.001, 0.999)) {
   return(c(height=x))
 }
 
+
 #' Extract width from  `LAS` object representing segmented tree.
 #'
 #' Function to extract width from LAS object. Function calculates
@@ -47,6 +48,7 @@ get_width = function(las, quantiles = c(0.001, 0.999)) {
   wd = mean(c(x,y))
   return(c(mean_width = wd, x_width = x, y_width=y))
 }
+
 
 #' Extract diameter at breast height from  `LAS` object representing segmented tree.
 #'
@@ -92,6 +94,7 @@ get_dbh = function(las, intensity_threshold=41000,
   return(c(dbh = as.numeric(dbh)))
 }
 
+
 #' Estimate Crown base height of `LAS` representing segmented tree.
 #'
 #' This function estimates the crown base height by analyzing the vertical
@@ -128,6 +131,7 @@ get_crown_base = function(las, threshold = 0.5, sustain = 2,
   return(c(crown_base_height=cbh))
 }
 
+
 #' Generate area estimates of tree profile in segments
 #'
 #' This function calculates the area of the tree profile
@@ -148,13 +152,13 @@ get_crown_base = function(las, threshold = 0.5, sustain = 2,
 #' @importFrom tibble tibble
 #' @export
 get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle = 0) {
-  pc = rotate_las_z(las, angle)
+  pc = rotate_las_z(las, angle)@data[, c('X', 'Y', 'Z')]
   height = get_height(las)
   ground = 0
   myfun = function(slice_min) {
     slice_max = slice_min + segment_height
-    slice = dplyr::filter(pc, z > slice_min & z <= slice_max)
-    width = diff(stats::quantile(slice$x, probs = c(quantile,1-quantile)))
+    slice = dplyr::filter(pc, Z > slice_min & Z <= slice_max)
+    width = diff(stats::quantile(slice$X, probs = c(quantile,1-quantile)))
     area = width * segment_height
     return(tibble::tibble(bottom = slice_min, top = slice_max, width = width, area = area))
   }
@@ -162,6 +166,7 @@ get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle
   output$angle = angle
   return(output)
 }
+
 
 #' Segment tree crown of `LAS` representing segmented tree.
 #'
@@ -185,7 +190,6 @@ segment_crown = function(las, crown_base_height = NULL) {
 }
 
 
-
 #' Estimate crown volume by voxelization
 #'
 #' This function volume of a `LAS` object by thinning to a resolution specified
@@ -204,6 +208,7 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
   return(c(crown_volume_vox = volume))
 }
 
+
 #' Estimate crown volume by  alpha shape volume
 #'
 #' This function volume of a `LAS` object by thinning to a resolution specified
@@ -216,9 +221,98 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' @importFrom ITSMe alpha_volume_pc
 #' @export
 get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
-  if(!'Crown' %in% colnames(las@data)) stop('las does not contain column called `Crown` use `segment_crown()`')
+  if(!'Crown' %in% colnames(las@data)) {
+    stop('las does not contain column called `Crown` use `segment_crown()`')
+  }
   crown = lidR::filter_poi(las, Crown == 1)
   vox = lidR::voxelize_points(crown, res = resolution)
   vol = suppressWarnings(ITSMe::alpha_volume_pc(vox@data[, c('X','Y','Z')], alpha=alpha))
   return(c(crown_volume_alpha = vol$av))
 }
+
+
+#' Returns the convex hull representing vertical crown area
+#'
+#' This function generates an `sf` object representing th vertical crown area
+#' of a `LAS` object based using the convex hull of a 2D vertical projection.
+#' @param las `LAS` object from `lidR` package representing
+#' the CROWN of a tree. Crowns must be segmented using [segment_crown()].
+#' @param angle numeric - in degrees, rotation angle about Z axis.
+#' @importFrom lidR filter_poi
+#' @importFrom sf st_as_sf st_convex_hull st_union
+#' @export
+convex_hull_2D = function(las, angle = 0) {
+  if(!'Crown' %in% colnames(las@data)) {
+    stop('las does not contain column called `Crown` use `segment_crown()`')
+  }
+  #vertical projection on X-Z plane
+  las = lidR::filter_poi(las, Crown == 1)
+  las = rotate_las_z(las, angle)
+  las = las@data[,c('X', 'Z')]
+  las = sf::st_as_sf(las, coords = c('X', 'Z'))
+  las = sf::st_convex_hull(sf::st_union(las))
+  las = sf::st_as_sf(las)
+  return(las)
+}
+
+
+#' Returns an `sf`representing the vertical crown area from voxelization
+#'
+#' This function generates an `sf` object representing th vertical crown area
+#' of a `LAS` object by voxelizing a 2D vertical projection.
+#' @param las `LAS` object from `lidR` package representing
+#' the CROWN of a tree. Crowns must be segmented using [segment_crown()].
+#' @param resolution numeric - resolution of voxelization
+#' @param angle numeric - in degrees, rotation angle about Z axis.
+#' @importFrom lidR filter_poi voxelize_points rasterize_density
+#' @importFrom sf st_as_sf st_as_sf st_crs
+#' @importFrom terra as.polygons
+#' @export
+voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
+  if(!'Crown' %in% colnames(las@data)) {
+    stop('las does not contain column called `Crown` use `segment_crown()`')
+  }
+  crown = filter_poi(las, Crown == 1)
+  if(angle != 0) las = rotate_las_z(crown, angle)
+  crown@data[, Y := crown$Z]
+  flat_las = lidR::voxelize_points(crown, resolution)
+  proj = lidR::rasterize_density(flat_las, res = resolution)
+  proj = proj > 0
+  proj[proj == 0] = NA
+  proj = sf::st_as_sf(terra::as.polygons(proj))
+  sf::st_crs(proj) = NA
+  return(proj)
+}
+
+# #function to get 2d hulls.
+# cvx_hull = convex_hull(tree_pc)
+# hull_area_convex = sf::st_area(cvx_hull)
+# porosity = hull_area_porous/hull_area_convex
+#
+
+# # Get area profiles for a list of angles with rotation
+# get_area_profile_rotation = function(las, angles){
+#   pb = txtProgressBar(min = 0, max = length(angles), initial = 0, style=3)
+#   setTxtProgressBar(pb,0)
+#   out = list()
+#   for(i in 1:length(angles)) {
+#     df = get_area_profile(normalize(las), angle = angles[i])
+#     out[[length(out)+1]] = df
+#     setTxtProgressBar(pb,i)
+#   }
+#   out = do.call(rbind, out)
+#   return(out)
+# }
+#
+#
+#
+# get_lever_arm = function(profile) {
+#   profile = dplyr::mutate(profile,
+#                           midpoint = (bottom+top)/2,
+#                           lever_arm = area * midpoint)
+#   profile = dplyr::group_by(profile, angle)
+#   lever_arm = dplyr::summarize(profile, sum = sum(lever_arm))
+#   return(lever_arm)
+# }
+#
+#

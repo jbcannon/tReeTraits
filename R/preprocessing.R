@@ -143,7 +143,9 @@ treeQSM = function() {stop('matlab download is down')}
 rotate_las_z = function(las, angle) {
   pc = las@data[,c('X','Y','Z')]
   pc = recexcavAAR::rotate(pc$X, pc$Y, pc$Z, degrx = 0, degry = 0, degrz = angle)
-  return(pc)
+  las@data[, X:= pc$x]
+  las@data[, Y:= pc$y]
+  return(las)
 }
 
 
