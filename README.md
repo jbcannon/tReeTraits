@@ -37,7 +37,25 @@ traits related to trunk taper, tilt, biomass, and branching architecture.
 
 ## Package installation
 
+This package has dependencies not on CRAN that must be installed
+including `spanner`, `ITSMe`, and `TreeLS`
+
+```{r}
+install.packages('remotes')
+remotes::install_github('bi0m3trics/spanner')
+remotes::install_github('Imterryn/ITSMe')
+remotes::install_github('tiagodc/TreeLS')
+```
+Get the latest released version of `tReeTraits from github
+
+```{r}
+remotes::install_github('jbcannon/tReeTraits')
+
+```
+
 ## Pre-processing
+* **Preprocessing**: Functions to load, recenter, normalize and rotate trees, as 
+well as remove vegetation from the vicinity of the bole.
 
 ## CLeanup las
 
