@@ -1,9 +1,5 @@
----
-title: "tReeTraits"
-output:
-  html_document:
-    toc: true
----
+# tReeTraits
+
 An R Package to generate data on tree architecture from terrestrial lidar scans
 
 # Summary
@@ -59,7 +55,10 @@ remotes::install_github('jbcannon/tReeTraits')
 `tReeTraits` contains functions to load, recenter, normalize and rotate trees, 
 as well as remove vegetation from the vicinity of the bole.
 
+###  `clean_las()`
+
 ```{r}
+
 library(tReeTraits)
 library(lidR)
 
@@ -72,11 +71,14 @@ las = clean_las(las, bole_height=2)
 plot(las)
 
 ```
+<img src ='img/clean_las_ex.jpg' width = 200></img>
+
+Pine tree with vegetation around bole removed.
+
+### `normalize_las()`
 
 You can also normalize and recenter trees with individual functions to 
 `normalize_las` and `recenter_las`
-
-### Normalize las
 
 ```{r}
 las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
@@ -85,8 +87,7 @@ las = normalize_las(las)
 # view histogram of Z values now ranging from  0 to 11 m
 hist(las$Z)
 ```
-
-### Recenter las
+### `recenter_las()`
 
 ```{r}
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -100,14 +101,8 @@ par(mfrow=c(1,2))
 hist(las$X)
 hist(las$Y)
 ```
-
-# clean_las will automatically recenter, normalize and remove vegetation
-las = clean_las(las, bole_height=2)
-plot(las)
-```
 ## CLeanup las
 
--show side by size of tree-0623
 
 ### Normalize and Recenter
 

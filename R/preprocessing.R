@@ -78,7 +78,7 @@ recenter_las = function(las, height = 1) {
 #' below the `z.treshold`.
 #' @param las `LAS` object from `lidR` package representing
 #' individually segmented tree
-#' @param Z.threshold numeric, height threshold below which all stem points
+#' @param bole_height numeric, height threshold below which all stem points
 #' can be considered vegetation.
 #' @param quantile See `normalize_las`. Z quantile at which grown level is specified since
 #' ground points may not be identifiable with common algorithms if
@@ -97,11 +97,11 @@ recenter_las = function(las, height = 1) {
 #' @importFrom TreeLS stemPoints
 #' @import data.table
 #' @export
-clean_las = function(las, Z.threshold = 1, bole_height=1, quantile=0.001) {
+clean_las = function(las, bole_height=1, quantile=0.001) {
   las = normalize_las(las)
   #identify points that are part of the stem and remove them
   las = suppressMessages(TreeLS::stemPoints(las))
-  las = lidR::filter_poi(las, Z >  Z.threshold | (Z <  Z.threshold & Stem == TRUE))
+  las = lidR::filter_poi(las, Z >  bole_height | (Z <  bole_height & Stem == TRUE))
   #recenter on the bole.
   las = recenter_las(las)
   las = lidR::filter_duplicates(las)
