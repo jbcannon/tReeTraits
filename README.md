@@ -41,22 +41,70 @@ This package has dependencies not on CRAN that must be installed
 including `spanner`, `ITSMe`, and `TreeLS`
 
 ```{r}
-install.packages('remotes')
+install.packages('lidR')
+install.packages('remotes') #allows installation of github packages
 remotes::install_github('bi0m3trics/spanner')
 remotes::install_github('Imterryn/ITSMe')
 remotes::install_github('tiagodc/TreeLS')
 ```
+
 Get the latest released version of `tReeTraits from github
 
 ```{r}
 remotes::install_github('jbcannon/tReeTraits')
-
 ```
 
 ## Pre-processing
-* **Preprocessing**: Functions to load, recenter, normalize and rotate trees, as 
-well as remove vegetation from the vicinity of the bole.
 
+`tReeTraits` contains functions to load, recenter, normalize and rotate trees, 
+as well as remove vegetation from the vicinity of the bole.
+
+```{r}
+library(tReeTraits)
+library(lidR)
+
+# load and view example data
+las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+plot(las)
+
+# clean_las will automatically recenter, normalize and remove vegetation
+las = clean_las(las, bole_height=2)
+plot(las)
+
+```
+
+You can also normalize and recenter trees with individual functions to 
+`normalize_las` and `recenter_las`
+
+### Normalize las
+
+```{r}
+las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+hist(las$Z)
+las = normalize_las(las)
+# view histogram of Z values now ranging from  0 to 11 m
+hist(las$Z)
+```
+
+### Recenter las
+
+```{r}
+las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+# view histogram of original X/Y values
+par(mfrow=c(1,2))
+hist(las$X)
+hist(las$Y)
+las = recenter_las(las)
+# view histogram of X/Y values centered on 0,0
+par(mfrow=c(1,2))
+hist(las$X)
+hist(las$Y)
+```
+
+# clean_las will automatically recenter, normalize and remove vegetation
+las = clean_las(las, bole_height=2)
+plot(las)
+```
 ## CLeanup las
 
 -show side by size of tree-0623
