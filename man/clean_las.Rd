@@ -5,13 +5,13 @@
 \title{Load, Recenter, and Remove low vegetation from `LAS` object representing
 segmented tree}
 \usage{
-clean_las(las, Z.threshold = 1, bole_height = 1, quantile = 0.001)
+clean_las(las, bole_height = 1, quantile = 0.001)
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing
 individually segmented tree}
 
-\item{Z.threshold}{numeric, height threshold below which all stem points
+\item{bole_height}{numeric, height threshold below which all stem points
 can be considered vegetation.}
 
 \item{quantile}{See `normalize_las`. Z quantile at which grown level is specified since

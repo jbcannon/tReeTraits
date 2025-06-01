@@ -71,7 +71,7 @@ las = clean_las(las, bole_height=2)
 plot(las)
 
 ```
-<img src ='img/clean_las_ex.jpg' width = 200></img>
+<img src ='img/clean_las_ex.jpg' width = 300></img>
 
 Pine tree with vegetation around bole removed.
 
@@ -101,16 +101,6 @@ par(mfrow=c(1,2))
 hist(las$X)
 hist(las$Y)
 ```
-## CLeanup las
-
-
-### Normalize and Recenter
-
--show side by size of tree-0623
-
-### Remove vegetation
-
--show side by size of tree-0623
 
 ## Traits from point cloud
 
