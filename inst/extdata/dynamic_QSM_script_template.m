@@ -16,6 +16,10 @@
 %------------------------------------------------------------------------->
 % SET INPUTS
 %------------------------------------------------------------------------->
+if ~exist('results/', 'dir')
+    mkdir('results/');
+end
+addpath(genpath('%%TREE_QSM_DIRECTORY%%'));% add path to include all functions
 tree_filename = '%%TREE_MAT_PATH%%'; %no .mat extension
 tree_name = '%%TREE_ID%%';  % For naming output files
 
@@ -27,11 +31,11 @@ rmdir(local.JobStorageLocation, 's');
 opt_method = 'trunk+1branch_mean_dis';
 
 create_input;
-inputs.PatchDiam1 = [0.05, 0.10, 0.15];
+inputs.PatchDiam1 = [%%INPUTS_PATCHDIAM1%%];
 % These two are the most important to vary per TreeQSM Manual
-inputs.PatchDiam2Min = [0.03, 0.04, 0.05];
-inputs.PatchDiam2Max = [0.12, 0.14, 0.16];
-inputs.lcyl = [0.33, 0.5, 0.75];
+inputs.PatchDiam2Min = [%%INPUTS_PATCHDIAM2MIN%%];
+inputs.PatchDiam2Max = [%%INPUTS_PATCHDIAM2MAX%%];
+inputs.lcyl = [%%INPUTS_LCYL%%];
 
 %------------------------------------------------------------------------->
 % RUN MODELS AND OPTIMIZATION

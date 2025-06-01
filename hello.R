@@ -1,3 +1,9 @@
+## next steps
+
+#qsm metrics.
+# update documentation
+# update readme.md
+
 rm(list=ls())
 library(lidR)
 library(tReeTraits)
@@ -43,27 +49,12 @@ plot(las)
 plot(las_cleaned)
 
 
-las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+## Make a QSM
+las = readLAS(system.file("extdata", "tree_0723.laz", package="tReeTraits"))
+las = filter_poi(las, Intensity > 44000) # remove foliage returns
 las = clean_las(las)
-# remove bole
-las = TreeLS::stemPoints(las)
-eigen = spanner::eigen_metrics(las)
-#add eigens
-for(i in c('Verticality', 'Sphericity', 'Linearity')) {
-  las = add_lasattribute(las, eigen[[i]], i, i)
-}
-crown_score = (as.numeric((las$Sphericity > 0.3)) +  as.numeric(las$Verticality < 0.9) + as.numeric(las$Linearity < 0.55) + as.numeric(las$Intensity < 41000))
-crown_score = crown_score * (!las$Stem)
-crown_score = crown_score>=3
-las = add_lasattribute(las, as.numeric(crown_score), 'Crown', 'Crown')
-plot(las, color='Crown', legend=TRUE)
-
-library(ggplot2)
-library(tidyverse)
-las@data %>% filter(!is.na(`Crown Points`)) %>%
-  ggplot(aes(x=Intensity, alpha=0.1, fill=as.factor(`Crown Points`))) + geom_density()
-plot(las, color='Crown')
-
-
-crown = filter_poi(las, Crown == 1)
-stems = filter_poi(las, Crown == 0)
+tree_mat = las_to_mat(las)
+inputs = lapply(default_qsm_inputs(), function(x) x[2])
+run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0723', parameter_inputs = inputs, overwrite=TRUE,
+    output_results = 'R:/landscape_ecology/projects/canopy-traits/qsm-results/',
+    TreeQSM_directory = 'R:/landscape_ecology/projects/canopy-traits/docs/TreeQSM/')

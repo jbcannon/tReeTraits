@@ -123,9 +123,6 @@ set_MATLAB = function(path){
 }
 
 
-# Function to generate TreeQSM matlab script with specified parameters
-treeQSM = function() {stop('matlab download is down')}
-
 #' Rotate `LAS` object about the `Z` axis
 #'
 #' Rotate `LAS` object about the `Z` axis for specified angle.
