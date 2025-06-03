@@ -55,6 +55,14 @@ las = filter_poi(las, Intensity > 44000) # remove foliage returns
 las = clean_las(las)
 tree_mat = las_to_mat(las)
 inputs = lapply(default_qsm_inputs(), function(x) x[2])
-run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0723', parameter_inputs = inputs, overwrite=TRUE,
+run_qsm(tree_mat = tree_mat, unique_id = 'tree_0723', parameter_inputs = inputs, overwrite=TRUE,
     output_results = 'R:/landscape_ecology/projects/canopy-traits/qsm-results/',
     TreeQSM_directory = 'R:/landscape_ecology/projects/canopy-traits/docs/TreeQSM/')
+
+qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm = load_qsm(qsm_file)
+
+qsm_bole = dplyr::filter(qsm, branching_order == 0)
+
+get_center_of_mass(qsm_bole)
+

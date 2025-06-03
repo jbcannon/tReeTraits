@@ -170,3 +170,15 @@ valid_qsm_inputs = function(inputs) {
   }
   return(TRUE)
 }
+
+#' Load QSM created by Matlab
+#'
+#' This is a simple wrapper for `archi::read_QSM` to read in a QSM as a
+#' data.frame for further analysis
+#' @param qsm_file character - path to QSM file created by `[run_qsm]`
+#' @importFrom aRchi read_QSM
+#' @export
+load_qsm = function(qsm_file) {
+  treeqsm = suppressWarnings(aRchi::read_QSM(qsm_file, 'treeQSM')$QSM)
+  return(treeqsm)
+}

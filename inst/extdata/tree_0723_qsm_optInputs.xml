@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<struct>
+    <PatchDiam1>0.1</PatchDiam1>
+    <PatchDiam2Min>0.04</PatchDiam2Min>
+    <PatchDiam2Max>0.14</PatchDiam2Max>
+    <lcyl>0.5</lcyl>
+    <FilRad>3</FilRad>
+    <BallRad1>0.11</BallRad1>
+    <BallRad2>0.15</BallRad2>
+    <nmin1>3</nmin1>
+    <nmin2>1</nmin2>
+    <OnlyTree>1</OnlyTree>
+    <Tria>0</Tria>
+    <Dist>1</Dist>
+    <MinCylRad>0.0025</MinCylRad>
+    <ParentCor>1</ParentCor>
+    <TaperCor>1</TaperCor>
+    <GrowthVolCor>0</GrowthVolCor>
+    <GrowthVolFac>2.5</GrowthVolFac>
+    <name>tree</name>
+    <tree>1</tree>
+    <model>5</model>
+    <savemat>0</savemat>
+    <savetxt>0</savetxt>
+    <plot>0</plot>
+    <disp>0</disp>
+    <metric>trunk+1branch_mean_dis</metric>
+</struct>
