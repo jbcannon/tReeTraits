@@ -187,7 +187,7 @@ basics_diagnostic_plot(las, height, cbh, crown_width, dbh)
 ```
 
 ![Figure illustrating basic canopy measurements of
-tree_0129](img/basic_tree_meas.jpg){width="150"}
+tree_0129](img/basic_tree_meas.JPG){width="150"}
 
 ### Crown area and lever arm
 
