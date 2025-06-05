@@ -4,7 +4,7 @@
 \alias{get_height}
 \title{Extract height from  `LAS` object representing segmented tree.}
 \usage{
-get_height(las, quantiles = c(0.001, 0.999))
+get_height(las, quantiles = c(0, 1))
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing

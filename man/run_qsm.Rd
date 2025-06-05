@@ -54,7 +54,9 @@ las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las = filter_poi(las, Intensity > 44000) # remove foliage returns
 las = clean_las(las)
 tree_mat = las_to_mat(las)
-run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0744',
+qsm_file = run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0744',
     output_results = 'R:/landscape_ecology/projects/canopy-traits/qsm-results/',
     TreeQSM_directory = 'R:/landscape_ecology/projects/canopy-traits/docs/TreeQSM/')
+qsm = load_qsm(qsm_file)
+head(qsm)
 }

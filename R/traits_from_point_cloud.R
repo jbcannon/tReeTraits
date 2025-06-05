@@ -14,7 +14,7 @@
 #' print(get_height(las))
 #' @importFrom stats quantile
 #' @export
-get_height = function(las, quantiles = c(0.001, 0.999)) {
+get_height = function(las, quantiles = c(0, 1)) {
   stopifnot(class(las) == 'LAS')
   stopifnot(length(quantiles) == 2)
   stopifnot(quantiles >= 0 & quantiles <= 1)
@@ -108,7 +108,7 @@ get_dbh = function(las, intensity_threshold=41000,
 #' Recommend a width ~2X greater than anticipated DBH.
 #' @param sustain numeric - number of segments in a row that treshold must be
 #' exceeded before identifying start of crown. This is to exclude small segments
-#' of crown isolated from larger continuous canopy.
+#' of crown isolated from larger continuous crown.
 #' @param segment_height numeric - height of each segment in which to calculate area
 #' @param quantile numeric - quantile at which width is measured
 #' Values in the interval approaching 0 (e.g., 0.001) are recommended to
@@ -137,24 +137,22 @@ get_crown_base = function(las, threshold = 0.5, sustain = 2,
 #' This function calculates the area of the tree profile
 #' by breaking it into segments of height `segment_height` and estimating
 #' the width of each segement. Area profiles are useful for
-#' caluclating total area, but also used to detect canopy base
+#' caluclating total area, but also used to detect crown base
 #' height.
 #' @param las `LAS` object from `lidR` package representing
-#' individually segmented tree
+#' individually segmented tree, with the crown labeled.
 #' @param segment_height numeric - height of each segment in which to calculate area
 #' @param quantile numeric - quantile at which width is measured
 #' Values in the interval approaching 0 (e.g., 0.001) are recommended to
 #' trim random noise
-#' @param rotation_angle numeric - angle at which to rotate the point cloud prior
+#' @param angle numeric - angle at which to rotate the point cloud prior
 #' to estimating area. Useful in a loop if quantifying mulitple angles
 #' @importFrom dplyr filter
 #' @importFrom stats quantile
 #' @importFrom tibble tibble
-#' @export
 get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle = 0) {
   pc = rotate_las_z(las, angle)@data[, c('X', 'Y', 'Z')]
-  height = get_height(las)
-  ground = 0
+  heights = quantile(las$Z, probs = c(quantile, 1-quantile))
   myfun = function(slice_min) {
     slice_max = slice_min + segment_height
     slice = dplyr::filter(pc, Z > slice_min & Z <= slice_max)
@@ -162,7 +160,7 @@ get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle
     area = width * segment_height
     return(tibble::tibble(bottom = slice_min, top = slice_max, width = width, area = area))
   }
-  output = do.call(rbind, lapply(seq(ground,height,by=segment_height), function(i) myfun(i)))
+  output = do.call(rbind, lapply(seq(heights[1],heights[2],by=segment_height), function(i) myfun(i)))
   output$angle = angle
   return(output)
 }
@@ -175,7 +173,7 @@ get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle
 #' is estimated with [get_crown_base()] using default parameters.
 #' @param las `LAS` object from `lidR` package representing
 #' individually segmented tree
-#' @param crown_base_height numeric - height of canopy base for segmentation.
+#' @param crown_base_height numeric - height of crown base for segmentation.
 #' `NULL`, it is estimated with [get_crown_base()] using default parameters.
 #' @importFrom lidR add_lasattribute
 #' @export
@@ -200,6 +198,16 @@ segment_crown = function(las, crown_base_height = NULL) {
 #' @param resolution numeric - resolution of voxelization
 #' @importFrom lidR voxelize_points filter_poi
 #' @export
+#' @examples
+#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' las = clean_las(las)
+#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' las = segment_crown(las, cbh)
+#' get_crown_volume_voxel(las)
+#' get_crown_volume_alpha(las)
+#' st_area(convex_hull_2D(las)) #profile area, convex hull
+#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' get_lacunarity(las)
 get_crown_volume_voxel = function(las, resolution = 0.1) {
   if(!'Crown' %in% colnames(las@data)) stop('las does not contain column called `Crown` use `segment_crown()`')
   crown = lidR::filter_poi(las, Crown == 1)
@@ -220,6 +228,15 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' @importFrom lidR voxelize_points filter_poi
 #' @importFrom ITSMe alpha_volume_pc
 #' @export
+#' @examples
+#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' las = segment_crown(las, cbh)
+#' get_crown_volume_voxel(las)
+#' get_crown_volume_alpha(las)
+#' st_area(convex_hull_2D(las)) #profile area, convex hull
+#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' get_lacunarity(las)
 get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
@@ -241,6 +258,15 @@ get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
 #' @importFrom lidR filter_poi
 #' @importFrom sf st_as_sf st_convex_hull st_union
 #' @export
+#' @examples
+#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' las = segment_crown(las, cbh)
+#' get_crown_volume_voxel(las)
+#' get_crown_volume_alpha(las)
+#' st_area(convex_hull_2D(las)) #profile area, convex hull
+#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' get_lacunarity(las)
 convex_hull_2D = function(las, angle = 0) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
@@ -268,6 +294,15 @@ convex_hull_2D = function(las, angle = 0) {
 #' @importFrom sf st_as_sf st_as_sf st_crs
 #' @importFrom terra as.polygons
 #' @export
+#' @examples
+#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' las = segment_crown(las, cbh)
+#' get_crown_volume_voxel(las)
+#' get_crown_volume_alpha(las)
+#' st_area(convex_hull_2D(las)) #profile area, convex hull
+#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' get_lacunarity(las)
 voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
@@ -284,35 +319,62 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
   return(proj)
 }
 
-# #function to get 2d hulls.
-# cvx_hull = convex_hull(tree_pc)
-# hull_area_convex = sf::st_area(cvx_hull)
-# porosity = hull_area_porous/hull_area_convex
-#
 
-# # Get area profiles for a list of angles with rotation
-# get_area_profile_rotation = function(las, angles){
-#   pb = txtProgressBar(min = 0, max = length(angles), initial = 0, style=3)
-#   setTxtProgressBar(pb,0)
-#   out = list()
-#   for(i in 1:length(angles)) {
-#     df = get_area_profile(normalize(las), angle = angles[i])
-#     out[[length(out)+1]] = df
-#     setTxtProgressBar(pb,i)
-#   }
-#   out = do.call(rbind, out)
-#   return(out)
-# }
-#
-#
-#
-# get_lever_arm = function(profile) {
-#   profile = dplyr::mutate(profile,
-#                           midpoint = (bottom+top)/2,
-#                           lever_arm = area * midpoint)
-#   profile = dplyr::group_by(profile, angle)
-#   lever_arm = dplyr::summarize(profile, sum = sum(lever_arm))
-#   return(lever_arm)
-# }
-#
-#
+#' Calculate crown lacunarity from a tree crown
+#'
+#' This function calculates the lacunarity or "porosity" of a tree crown
+#' by comparing the ratio of a voxelized crown hull and a convex hull.
+#' See `voxel_hull_2D()` and `convex_hull_2D()`
+#' @param las `LAS` object from `lidR` package representing
+#' the CROWN of a tree. Crowns must be segmented using [segment_crown()].
+#' @param resolution numeric - resolution of voxelization
+#' @param angle numeric - in degrees, rotation angle about Z axis.
+#' @examples
+#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' las = segment_crown(las, cbh)
+#' get_crown_volume_voxel(las)
+#' get_crown_volume_alpha(las)
+#' st_area(convex_hull_2D(las)) #profile area, convex hull
+#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' get_lacunarity(las)
+get_lacunarity = function(las, res = 0.1, angle = 0) {
+  # Make a voxel hull, and get the ratio of its area relative to same
+  # hull with holes filled.
+  if(!'Crown' %in% colnames(las@data)) stop('las does not contain column called `Crown` use `segment_crown()`')
+  las = lidR::filter_poi(las, Crown == 1)
+  if(angle != 0) las = rotate_las_z(las, angle)
+  voxel_hull_area = sf::st_area(voxel_hull_2D(las, res = res))
+  convex_hull_area = sf::st_area(convex_hull_2D(las))
+  lacunarity = voxel_hull_area/convex_hull_area
+  return(lacunarity)
+}
+
+#' Calculate crown leverage from point cloud
+#'
+#' This function calculates the lever arm of canopies. The function
+#' #' is a simple wrapper for `get_area_profile()`. It calculates the crown area
+#' in segments defined by `segement_height`, multiplies the area of each of those
+#' segments by their height, and then returns the sum of all segments. This
+#' is proportaionl to drag calculations on the tree assuming  windspeed is
+#' invariant with height.
+#' @param las `LAS` object from `lidR` package representing
+#' individually segmented tree, with the crown labeled. See `segment_crown()`
+#' @param segment_height numeric - height of each segment in which to calculate area
+#' @param quantile numeric - quantile at which width is measured
+#' Values in the interval approaching 0 (e.g., 0.001) are recommended to
+#' trim random noise
+#' @param angle numeric - angle at which to rotate the point cloud prior
+#'
+#' to estimating area. Useful in a loop if quantifying mulitple angles
+#' @importFrom dplyr filter
+get_crown_lever_arm = function(las, segment_height=0.25, quantile = c(0.001), angle=0) {
+  if(!'Crown' %in% colnames(las@data)) {
+    stop('las does not contain column called `Crown` use `segment_crown()`')
+  }
+  las = lidR::filter_poi(las, Crown == 1)
+  profile = get_area_profile(las, segment_height=segment_height, quantile=quantile, angle=angle)
+  profile = dplyr::mutate(profile, midpt = (bottom+top)/2, lever = area*midpt)
+  lever = sum(profile$lever, na.rm=TRUE)
+  return(lever)
+}

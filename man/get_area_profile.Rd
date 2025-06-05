@@ -8,7 +8,7 @@ get_area_profile(las, segment_height = 0.25, quantile = c(0.001), angle = 0)
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing
-individually segmented tree}
+individually segmented tree, with the crown labeled.}
 
 \item{segment_height}{numeric - height of each segment in which to calculate area}
 
@@ -16,13 +16,13 @@ individually segmented tree}
 Values in the interval approaching 0 (e.g., 0.001) are recommended to
 trim random noise}
 
-\item{rotation_angle}{numeric - angle at which to rotate the point cloud prior
+\item{angle}{numeric - angle at which to rotate the point cloud prior
 to estimating area. Useful in a loop if quantifying mulitple angles}
 }
 \description{
 This function calculates the area of the tree profile
 by breaking it into segments of height `segment_height` and estimating
 the width of each segement. Area profiles are useful for
-caluclating total area, but also used to detect canopy base
+caluclating total area, but also used to detect crown base
 height.
 }

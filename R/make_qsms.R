@@ -31,7 +31,8 @@ default_qsm_inputs = function() {
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las_cleaned = clean_las(las)
-#' las_to_mat(las_cleaned)
+#' tree_mat_file = las_to_mat(las_cleaned)
+#' print(tree_mat_file)
 #' @export
 las_to_mat = function(las, output_mat = tempfile(fileext = '.mat')) {
   if(file.exists(output_mat)) stop(paste0(output_mat, ' already exists'))
@@ -71,9 +72,11 @@ las_to_mat = function(las, output_mat = tempfile(fileext = '.mat')) {
 #' las = filter_poi(las, Intensity > 44000) # remove foliage returns
 #' las = clean_las(las)
 #' tree_mat = las_to_mat(las)
-#' run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0744',
+#' qsm_file = run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0744',
 #'     output_results = 'R:/landscape_ecology/projects/canopy-traits/qsm-results/',
 #'     TreeQSM_directory = 'R:/landscape_ecology/projects/canopy-traits/docs/TreeQSM/')
+#' qsm = load_qsm(qsm_file)
+#' head(qsm)
 #' @export
 run_qsm = function(
     tree_mat, unique_id, output_results,
@@ -121,19 +124,6 @@ run_qsm = function(
 }
 
 
-
-#mat lab instructions
-#Must install parallel computing toolbox
-#https://www.mathworks.com/matlabcentral/answers/4707-how-can-i-download-parallel-computing-toolbox
-#Must install Statistics and Machine Learning toolbox
-#https://www.mathworks.com/products/statistics.html
-
-
-# function to make JPGS
-
-
-
-
 # internal function to check for valid Tree QSM parameter inputs
 valid_qsm_inputs = function(inputs) {
   # check if its a list
@@ -177,8 +167,14 @@ valid_qsm_inputs = function(inputs) {
 #' data.frame for further analysis
 #' @param qsm_file character - path to QSM file created by `[run_qsm]`
 #' @importFrom aRchi read_QSM
+#' @examples
+#' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+#' qsm = load_qsm(qsm_file)
+#' plot_qsm(qsm)
 #' @export
 load_qsm = function(qsm_file) {
   treeqsm = suppressWarnings(aRchi::read_QSM(qsm_file, 'treeQSM')$QSM)
   return(treeqsm)
 }
+
+

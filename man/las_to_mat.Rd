@@ -21,5 +21,6 @@ as a .mat MATLAB object for input to `[run_qsm]`.
 library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las_cleaned = clean_las(las)
-las_to_mat(las_cleaned)
+tree_mat_file = las_to_mat(las_cleaned)
+print(tree_mat_file)
 }

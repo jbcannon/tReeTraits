@@ -13,3 +13,8 @@ load_qsm(qsm_file)
 This is a simple wrapper for `archi::read_QSM` to read in a QSM as a
 data.frame for further analysis
 }
+\examples{
+qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm = load_qsm(qsm_file)
+plot_qsm(qsm)
+}

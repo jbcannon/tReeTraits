@@ -21,7 +21,7 @@ Recommend a width ~2X greater than anticipated DBH.}
 
 \item{sustain}{numeric - number of segments in a row that treshold must be
 exceeded before identifying start of crown. This is to exclude small segments
-of crown isolated from larger continuous canopy.}
+of crown isolated from larger continuous crown.}
 
 \item{segment_height}{numeric - height of each segment in which to calculate area}
 

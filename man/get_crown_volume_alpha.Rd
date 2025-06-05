@@ -17,3 +17,13 @@ This function volume of a `LAS` object by thinning to a resolution specified
 by `resolution`, and estimating volume by fitting a alpha shape volume.
 Crowns must be segmented using [segment_crown()].
 }
+\examples{
+las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+cbh = get_crown_base(las, threshold=0.25, sustain=2)
+las = segment_crown(las, cbh)
+get_crown_volume_voxel(las)
+get_crown_volume_alpha(las)
+st_area(convex_hull_2D(las)) #profile area, convex hull
+st_area(voxel_hull_2D(las)) #profile area, voxel hull
+get_lacunarity(las)
+}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/traits_from_qsm.R
 \name{get_center_of_mass}
 \alias{get_center_of_mass}
-\title{Get center of mass from QSM (X, Y, Z)}
+\title{Get center of mass from tree bole segments QSM (X, Y, Z)}
 \usage{
 get_center_of_mass(qsm)
 }
@@ -12,8 +12,7 @@ get_center_of_mass(qsm)
 \description{
 This function calculates the center of mass/volume from a QSM
 by estimating the centroid of cylinder locations, each weighted
-by their volume. For meaningful results, you may need to filter
-out trunk sections only (e.g., `branching_order == 0`).
+by their volume. Only trunk sections are included (e.g., `branching_order == 0`).
 For center of mass, assumes constant density
 within segments.
 }

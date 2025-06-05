@@ -31,6 +31,7 @@ traits related to trunk taper, tilt, biomass, and branching architecture.
 
 # Workflow
 
+
 ## Package installation
 
 This package has dependencies not on CRAN that must be installed

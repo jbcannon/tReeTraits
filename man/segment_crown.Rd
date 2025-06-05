@@ -10,7 +10,7 @@ segment_crown(las, crown_base_height = NULL)
 \item{las}{`LAS` object from `lidR` package representing
 individually segmented tree}
 
-\item{crown_base_height}{numeric - height of canopy base for segmentation.
+\item{crown_base_height}{numeric - height of crown base for segmentation.
 `NULL`, it is estimated with [get_crown_base()] using default parameters.}
 }
 \description{
