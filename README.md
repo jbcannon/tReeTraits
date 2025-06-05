@@ -1,8 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
 
 # tReeTraits
 
@@ -113,7 +108,7 @@ hist(las$Z)
 hist(las_norm$Z)
 ```
 
-![](img/normalize_histogram.jpg){width="300"}
+![](img/normalize_histogram.JPG){width="300"}
 
 Histogram of Z values from lidar scan of pine tree before and after
 normalization.
@@ -135,7 +130,7 @@ hist(las$Y)
 ```
 
 ![Histograms of X and Y values before (top) and after (bottom)
-recentering](img/recenter_las.jpg){width="600"}
+recentering](img/recenter_las.jpg){width="400"}
 
 ### `rotate_las_z`
 
@@ -168,7 +163,7 @@ plot_tree(las)
 ```
 
 ![Figure illustrating 3 views of
-tree_0129](img/plot_tree.jpg){width="400"}
+tree_0129](img/plot_tree.JPG){width="400"}
 
 ## Traits from point cloud
 
@@ -224,7 +219,7 @@ hull_diagnostic_plot(las) #undocumented function, see `full_diagnostic_plot()`
 
 ![Illustration of convex hull (dashed line) and voxel hull (green
 feature) from tree_0129. The proportion of whitespace within the convex
-hull represents lacunarity (\~20%)](img/get_lacunarity.jpg){width="300"}
+hull represents lacunarity (\~20%)](img/get_lacunarity.JPG){width="300"}
 
 The function `get_crown_lever_arm()` is relevant to windfirmness. The
 function measures the crown area in different segments, and multiplies
@@ -273,7 +268,7 @@ alpha_volume_pc(vox@data[,c('X','Y','Z')], alpha=0.5, plot=TRUE)
 
 ![Figure illustrating crown volume of tree_0129 estimated using an alpha
 volume from the `ITSMe`
-package.](img/crown_alpha_volume.jpg){width="200"}
+package.](img/crown_alpha_volume.JPG){width="200"}
 
 ## Traits From QSM
 
