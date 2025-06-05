@@ -1,9 +1,3 @@
-
-
-
-
-
-
 #' Make 3-panel plot of tree point cloud to check for errors
 #'
 #' Plots 2 profiles X, Y, and and overhead Z view of a point
@@ -12,6 +6,8 @@
 #' @param las `LAS` object from `lidR` package representing
 #' the CROWN of a tree. Crowns can be segmented using [segment_crown()].
 #' @param res numeric - resolution of voxelization to speed up plotting
+#' @param plot boolean - indicates whether to print the output plot, in
+#' both cases a ggplot object is returned in the output.
 #' @examples
 #' # example code
 #' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
@@ -51,6 +47,8 @@ plot_tree = function(las, res = 0.05, plot=TRUE) {
 #' @param qsm  a QSM loaded using `[load_qsm()]`.
 #' @param scale a factor by which to multiply the `radius_cyl` column to
 #' give line segments the appearance of volume
+#' @param rotation boolean - indicates whether the plot should display the
+#' tree from 2 angles TRUE, or just one FALSE.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -114,7 +112,7 @@ taper_diagnostic_plot = function(qsm, dbh) {
   return(fit_taper_Kozak(qsm, dbh, plot=FALSE)$plot)
 }
 
-# diagnostic plot to view branch diameter distribution. Simpe wrapper
+# diagnostic plot to view branch diameter distribution. Simple wrapper
 # for `branch_size_distribution` which does most of the heavy lifting.
 branch_distribution_plot = function(qsm) {
   branches = branch_size_distribution(qsm, plot=FALSE)
@@ -131,10 +129,30 @@ branch_distribution_plot = function(qsm) {
 #' @param las `LAS` object from `lidR` package representing
 #' the CROWN of a tree. Crowns can be segmented using [segment_crown()]
 #' @param qsm  a QSM loaded using `[load_qsm()]`.
+#' @param height numeric - tree height, or generated from `get_height()`
+#' @param dbh numeric - in cm, tree diameter at breast height, or generated
+#' from `get_dbh()`
+#' @param crown_width numeric - crown width height, or generated from `get_width()`
+#' @param cbh numeric - crown base heigth, or generated from `get_crown_base()`.
 #' @param res numeric - resolution of voxelization to speed up plotting
+#' @importFrom ggpubr ggarrange
+#' @importFrom ggplotify as.ggplot
+#' @examples
+#' filename = system.file("extdata", "tree_0723.las", package="tReeTraits")
+#' las_file = system.file("extdata", "tree_0723.las", package="tReeTraits")
+#' las = lidR::readLAS(las_file)
+#' las = clean_las(las, bole_height=3)
+#' height = get_height(las)
+#' crown_width = get_width(las)
+#' dbh = get_dbh(las, select_n=30)
+#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' las = segment_crown(las, cbh)
+#' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+#' qsm = load_qsm(qsm_file)
+#' full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
 #' @export
 full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1) {
-  r = plot_tree(las)
+  r = plot_tree(las, plot=FALSE)
   s = basics_diagnostic_plot(las, height, cbh, crown_width, dbh, res)
   t = hull_diagnostic_plot(las, res=res)
   u = ggplotify::as.ggplot(~plot_qsm(qsm, rotation=FALSE, scale=50))

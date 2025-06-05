@@ -4,15 +4,15 @@
 \alias{get_stem_sweep}
 \title{Calculate tree sweep from straight line from QMS}
 \usage{
-get_stem_sweep(qsm, terminus_daim_cm = 4, plot = TRUE)
+get_stem_sweep(qsm, terminus_diam_cm = 4, plot = TRUE)
 }
 \arguments{
 \item{qsm}{QSM loaded using `[load_qsm()]`.}
 
-\item{plot}{boolean -- indicates whether graph of sweep should be plotted.}
-
 \item{terminus_diam_cm}{numeric -- the trunk diameter at which is no longer
 considered trunk}
+
+\item{plot}{boolean -- indicates whether graph of sweep should be plotted.}
 }
 \description{
 This function calculates tree sweep from a QSM. Starting with an idealized

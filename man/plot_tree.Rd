@@ -11,6 +11,9 @@ plot_tree(las, res = 0.05, plot = TRUE)
 the CROWN of a tree. Crowns can be segmented using [segment_crown()].}
 
 \item{res}{numeric - resolution of voxelization to speed up plotting}
+
+\item{plot}{boolean - indicates whether to print the output plot, in
+both cases a ggplot object is returned in the output.}
 }
 \description{
 Plots 2 profiles X, Y, and and overhead Z view of a point

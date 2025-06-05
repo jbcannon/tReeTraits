@@ -10,13 +10,13 @@ get_lacunarity(las, res = 0.1, angle = 0)
 \item{las}{`LAS` object from `lidR` package representing
 the CROWN of a tree. Crowns must be segmented using [segment_crown()].}
 
-\item{angle}{numeric - in degrees, rotation angle about Z axis.}
+\item{res}{numeric - resolution of voxelization}
 
-\item{resolution}{numeric - resolution of voxelization}
+\item{angle}{numeric - in degrees, rotation angle about Z axis.}
 }
 \description{
 This function calculates the lacunarity or "porosity" of a tree crown
-by comparing the ratio of a voxelized crown hull and a convex hull.
+by defined as 1 - the ratio of a voxelized crown hull and a convex hull.
 See `voxel_hull_2D()` and `convex_hull_2D()`
 }
 \examples{

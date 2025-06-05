@@ -7,7 +7,9 @@
 get_crown_volume_alpha(las, resolution = 0.1, alpha = 0.5)
 }
 \arguments{
-\item{resolution}{numeric - resolution of initial voxelization to increase speed}
+\item{las}{`LAS` object from `lidR` package representing
+a tree. Crowns must be segmented using [segment_crown()].
+@param resolution numeric - resolution of initial voxelization to increase speed}
 
 \item{alpha}{numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
 See [ITSMe::alpha_volume_pc()].}

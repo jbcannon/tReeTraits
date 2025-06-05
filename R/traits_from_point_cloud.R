@@ -194,7 +194,7 @@ segment_crown = function(las, crown_base_height = NULL) {
 #' by `resolution`, and estimating volume using the equation
 #' \deqn{Volume_{crown} = N_{occupied voxel} * Volume_{voxel}}
 #' @param las `LAS` object from `lidR` package representing
-#' the CROWN of a tree. Crowns can be segmented using [segment_crown()].
+#'  a tree. Crowns must be segmented using [segment_crown()].
 #' @param resolution numeric - resolution of voxelization
 #' @importFrom lidR voxelize_points filter_poi
 #' @export
@@ -222,7 +222,9 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' This function volume of a `LAS` object by thinning to a resolution specified
 #' by `resolution`, and estimating volume by fitting a alpha shape volume.
 #' Crowns must be segmented using [segment_crown()].
-#' @param resolution numeric - resolution of initial voxelization to increase speed
+#' @param las `LAS` object from `lidR` package representing
+#'  a tree. Crowns must be segmented using [segment_crown()].
+#'  @param resolution numeric - resolution of initial voxelization to increase speed
 #' @param alpha numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
 #' See [ITSMe::alpha_volume_pc()].
 #' @importFrom lidR voxelize_points filter_poi
@@ -323,11 +325,11 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
 #' Calculate crown lacunarity from a tree crown
 #'
 #' This function calculates the lacunarity or "porosity" of a tree crown
-#' by comparing the ratio of a voxelized crown hull and a convex hull.
+#' by defined as 1 - the ratio of a voxelized crown hull and a convex hull.
 #' See `voxel_hull_2D()` and `convex_hull_2D()`
 #' @param las `LAS` object from `lidR` package representing
 #' the CROWN of a tree. Crowns must be segmented using [segment_crown()].
-#' @param resolution numeric - resolution of voxelization
+#' @param res numeric - resolution of voxelization
 #' @param angle numeric - in degrees, rotation angle about Z axis.
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
@@ -346,7 +348,7 @@ get_lacunarity = function(las, res = 0.1, angle = 0) {
   if(angle != 0) las = rotate_las_z(las, angle)
   voxel_hull_area = sf::st_area(voxel_hull_2D(las, res = res))
   convex_hull_area = sf::st_area(convex_hull_2D(las))
-  lacunarity = voxel_hull_area/convex_hull_area
+  lacunarity = 1 - voxel_hull_area/convex_hull_area
   return(lacunarity)
 }
 

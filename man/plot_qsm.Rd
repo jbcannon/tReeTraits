@@ -11,6 +11,9 @@ plot_qsm(qsm, scale = 150, rotation = TRUE)
 
 \item{scale}{a factor by which to multiply the `radius_cyl` column to
 give line segments the appearance of volume}
+
+\item{rotation}{boolean - indicates whether the plot should display the
+tree from 2 angles TRUE, or just one FALSE.}
 }
 \description{
 Simple function to create a diagnostic plot to view QSMs colored

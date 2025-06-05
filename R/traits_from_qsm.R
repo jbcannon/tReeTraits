@@ -7,6 +7,11 @@
 #' within segments.
 #' @param qsm qsm object loaded from `[load_qsm]`.
 #' @importFrom dplyr mutate summarize
+#' @examples
+#' # example code
+#' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+#' qsm = load_qsm(qsm_file)
+#' print(get_center_of_mass)
 #' @export
 get_center_of_mass = function(qsm) {
   qsm = dplyr::filter(qsm, branching_order == 0)
@@ -77,6 +82,8 @@ internode_distances = function(qsm, min_diam = 2) {
 #' branch_volume_weighted_stats(qsm, FUN = function(x) 3*(mean(x) - median(x)) / sd(x)))
 #' @export
 branch_size_distribution = function(qsm, breaks = NULL, plot=TRUE) {
+  # Summarize primary branch attachment points
+  qsm = dplyr::filter(qsm, branching_order > 0)
   if(nrow(qsm) < 2) return(NA) # need multiple branches to get a distribution
   qsm$volume_mL = qsm$volume * 100*100*100
   qsm$diam_cm = qsm$radius_cyl*200
@@ -155,7 +162,6 @@ branch_volume_weighted_stats = function(qsm, breaks=NULL, FUN = function(x) mean
 #'
 #' #number of primary branches
 #' nrow(primary_branches)
-#'
 #' @export
 get_primary_branches = function(qsm)
 {
@@ -182,8 +188,8 @@ get_primary_branches = function(qsm)
 #' the diameter. Both of these can be used in mass-volume equations
 #' as needed.
 #' @param qsm a QSM loaded using `[load_qsm()]`.
-#' @param segment_size numeric length of trunk segments in which to summarize volume.
 #' @param terminus_diam_cm numeric - trunk diameter at which it is treated as a branch.
+#' @param segment_size numeric length of trunk segments in which to summarize volume.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -320,7 +326,7 @@ get_com_offset = function(qsm) {
 #' qsm = load_qsm(qsm_file)
 #' print(get_center_of_mass(qsm))
 #' print(get_com_offset(qsm))
-get_stem_sweep = function(qsm, terminus_daim_cm = 4, plot=TRUE) {
+get_stem_sweep = function(qsm, terminus_diam_cm = 4, plot=TRUE) {
   bole = dplyr::filter(qsm, branching_order==0 & radius_cyl > terminus_diam_cm/200)
 
   # Setup endpoints for tilt and sweep reference line
@@ -357,12 +363,17 @@ get_stem_sweep = function(qsm, terminus_daim_cm = 4, plot=TRUE) {
 
 #' Get tree tilt from QSM
 #'
-#' This fucntion calculates tilt of a tree from a QSM. The function identifies
+#' This function calculates tilt of a tree from a QSM. The function identifies
 #' the upper and lower extreme segments of the QMS (trunk sections only) and
 #' computes a vector between them, and returns the devation of that angle
 #' from directly vertical.
 #' @param qsm a QSM loaded using `[load_qsm()]`.
 #' @param terminus_diam_cm numeric - trunk diameter at which it is treated as a branch.
+#' @examples
+#' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+#' qsm = load_qsm(qsm_file)
+#' get_stem_tilt(qsm)
+#' @export
 get_stem_tilt = function(qsm, terminus_diam_cm = 4) {
   #extract tree bole
   bole = dplyr::filter(qsm, branching_order==0 & radius_cyl > terminus_diam_cm/200)
@@ -376,5 +387,3 @@ get_stem_tilt = function(qsm, terminus_diam_cm = 4) {
   tilt = as.vector(acos(diff(endpoints[,'Z'])/ dist(endpoints)) * 180/pi)
   return(tilt)
 }
-
-

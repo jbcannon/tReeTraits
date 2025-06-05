@@ -1,12 +1,3 @@
-## next steps
-
-# update documentation
-# update readme.md
-#mat lab instructions
-#Must install parallel computing toolbox
-#https://www.mathworks.com/matlabcentral/answers/4707-how-can-i-download-parallel-computing-toolbox
-#Must install Statistics and Machine Learning toolbox
-#https://www.mathworks.com/products/statistics.html
 
 library(lidR)
 library(tReeTraits)
@@ -69,7 +60,7 @@ V_v = get_crown_volume_voxel(las, resolution = 0.1)
 print(V_v)
 
 ## Make a QSM
-las = readLAS(system.file("extdata", "tree_0723.laz", package="tReeTraits"))
+las = readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
 las = filter_poi(las, Intensity > 44000) # remove foliage returns
 las = clean_las(las)
 tree_mat = las_to_mat(las)
@@ -111,7 +102,7 @@ branch_volume_weighted_stats(qsm, FUN = function(x) kurtosis(x))
 
 # Get volume distribution
 volume = qsm_volume_distribution(qsm)
-print(volume)
+View(volume)
 
 # Center of mass and its horizontal offset
 get_center_of_mass(qsm)
@@ -125,11 +116,7 @@ sweep = get_stem_sweep(qsm)
     sqrt(mean((sweep$sweep)^2)) #RMSE sweep
 
 #need to get QSM FIT statistics
-#mat lab instructions
-#Must install parallel computing toolbox
-#https://www.mathworks.com/matlabcentral/answers/4707-how-can-i-download-parallel-computing-toolbox
-#Must install Statistics and Machine Learning toolbox
-#https://www.mathworks.com/products/statistics.html
+
 
 
 filename = system.file("extdata", "tree_0723.las", package="tReeTraits")

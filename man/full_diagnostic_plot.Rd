@@ -12,8 +12,31 @@ the CROWN of a tree. Crowns can be segmented using [segment_crown()]}
 
 \item{qsm}{a QSM loaded using `[load_qsm()]`.}
 
+\item{height}{numeric - tree height, or generated from `get_height()`}
+
+\item{cbh}{numeric - crown base heigth, or generated from `get_crown_base()`.}
+
+\item{crown_width}{numeric - crown width height, or generated from `get_width()`}
+
+\item{dbh}{numeric - in cm, tree diameter at breast height, or generated
+from `get_dbh()`}
+
 \item{res}{numeric - resolution of voxelization to speed up plotting}
 }
 \description{
 Generate a diagnostic plot to assess basic metrics and QSM output
+}
+\examples{
+filename = system.file("extdata", "tree_0723.las", package="tReeTraits")
+las_file = system.file("extdata", "tree_0723.las", package="tReeTraits")
+las = lidR::readLAS(las_file)
+las = clean_las(las, bole_height=3)
+height = get_height(las)
+crown_width = get_width(las)
+dbh = get_dbh(las, select_n=30)
+cbh = get_crown_base(las, threshold=0.25, sustain=2)
+las = segment_crown(las, cbh)
+qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm = load_qsm(qsm_file)
+full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
 }

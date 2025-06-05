@@ -5,7 +5,20 @@
 #' format of parameters, and it follows the parameters used in
 #' Cannon et al. 202X article.
 #' @examples
+#' #view default parameters
 #' print(default_qsm_inputs())
+#'
+#' # Adjust default parameters
+#' library(lidR)
+#' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = filter_poi(las, Intensity > 44000) # remove foliage returns
+#' las = clean_las(las)
+#' tree_mat = las_to_mat(las)
+#' pars = default_qsm_inputs()
+#' pars$PatchDiam2Max = c(0.05,0.06,0.07)
+#' #' qsm_file = run_qsm(tree_mat = tree_mat, unique_id = 'Tree_0744',
+#'     output_results = 'R:/landscape_ecology/projects/canopy-traits/qsm-results/',
+#'     TreeQSM_directory = 'R:/landscape_ecology/projects/canopy-traits/docs/TreeQSM/')
 #' @export
 default_qsm_inputs = function() {
   pars = list(PatchDiam1 = c(0.05, 0.10, 0.15),
@@ -65,6 +78,8 @@ las_to_mat = function(las, output_mat = tempfile(fileext = '.mat')) {
 #' @param exit boolean - indicates whether to close matlab after run
 #' @param wait boolean - indicates whether to wait for matlab to complete before
 #' continuing
+#' @param overwrite boolean - indicates whether to overwrite any exiting .mat
+#' file with the same name.
 #' @importFrom readtext readtext
 #' @examples
 #' library(lidR)

@@ -83,10 +83,6 @@ recenter_las = function(las, height = 1) {
 #' @param quantile See `normalize_las`. Z quantile at which grown level is specified since
 #' ground points may not be identifiable with common algorithms if
 #' ground points are removed during segmentation#'
-#' @param height See `recenter_las`. Consider only points where Z < height, if specified.
-#' Useful for considering only the tree bole, for centering.
-#' individually segmented tree. Set `height = NULL` to recenter
-#' using all points.
 #' @examples
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -109,20 +105,6 @@ clean_las = function(las, bole_height=1, quantile=0.001) {
   return(las)
 }
 
-
-# Function to set path of Tree qsm to use in other functions
-set_TREEQSM_PATH = function(path){
-  if(!dir.exists(path)) stop('invalid path')
-  assign(TREEQSM_PATH, path, envir = .GlobalEnv)
-}
-
-# Function to set path of  Matlab to use in other functions
-set_MATLAB = function(path){
-  if(!dir.exists(path)) stop('invalid path')
-  assign(MATLAB_PATH, path, envir = .GlobalEnv)
-}
-
-
 #' Rotate `LAS` object about the `Z` axis
 #'
 #' Rotate `LAS` object about the `Z` axis for specified angle.
@@ -144,5 +126,3 @@ rotate_las_z = function(las, angle) {
   las@data[, Y:= pc$y]
   return(las)
 }
-
-

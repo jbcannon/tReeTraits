@@ -37,6 +37,9 @@ continuing}
 
 \item{exit}{boolean - indicates whether to close matlab after run}
 
+\item{overwrite}{boolean - indicates whether to overwrite any exiting .mat
+file with the same name.}
+
 \item{template_script}{character - path to dynamic input script template
 for generated matlab code. Defaults to file installed with library, but
 exposed to user for customization}

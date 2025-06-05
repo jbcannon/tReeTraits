@@ -22,5 +22,4 @@ primary_branches = get_primary_branches(qsm)
 
 #number of primary branches
 nrow(primary_branches)
-
 }

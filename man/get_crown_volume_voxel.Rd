@@ -8,7 +8,7 @@ get_crown_volume_voxel(las, resolution = 0.1)
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing
-the CROWN of a tree. Crowns can be segmented using [segment_crown()].}
+a tree. Crowns must be segmented using [segment_crown()].}
 
 \item{resolution}{numeric - resolution of voxelization}
 }

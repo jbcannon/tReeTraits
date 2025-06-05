@@ -17,11 +17,6 @@ can be considered vegetation.}
 \item{quantile}{See `normalize_las`. Z quantile at which grown level is specified since
 ground points may not be identifiable with common algorithms if
 ground points are removed during segmentation#'}
-
-\item{height}{See `recenter_las`. Consider only points where Z < height, if specified.
-Useful for considering only the tree bole, for centering.
-individually segmented tree. Set `height = NULL` to recenter
-using all points.}
 }
 \description{
 Function to normalize, remove noise, remove vegetation, and recenter `LAS`
