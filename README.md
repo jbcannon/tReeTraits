@@ -39,8 +39,8 @@ If you plan to generate Quantitative Structure Models (QSMs), you'll need:
 
 -   A licensed installation of <a href=https://www.mathworks.com/help/install/ug/install-products-with-internet-connection.html> **MATLAB**</a>
 -   Toolboxes
-    -   `<a href=https://www.mathworks.com/matlabcentral/answers/4707-how-can-i-download-parallel-computing-toolbox`{=html}Parallel Computing Toolbox</a>
-    -   `<a href=https://www.mathworks.com/products/statistics.html`{=html}Statistics and Machine Learning Toolbox</a>
+    -   <a href=https://www.mathworks.com/matlabcentral/answers/4707-how-can-i-download-parallel-computing-toolbox>Parallel Computing Toolbox</a>
+    -   <a href=https://www.mathworks.com/products/statistics.html>Statistics and Machine Learning Toolbox</a>
 
 ### TreeQSM Requirements
 
