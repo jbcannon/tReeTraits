@@ -63,7 +63,7 @@ las_clean <- clean_las(las, bole_height = 2)
 plot_tree(las_clean)
 ```
 
-![](img/clean_las_ex.jpg){width="300"}
+<img src="img/clean_las_ex.jpg" width="300"/>
 
 Pine tree with vegetation around bole removed.
 
@@ -90,7 +90,9 @@ volume_voxel <- get_crown_volume_voxel(las_crown)
 
 ```
 
-![Illustration of convex hull (dashed line) and voxel hull (green feature) from tree_0129. The proportion of whitespace within the convex hull represents lacunarity (\~20%)](img/get_lacunarity.JPG){width="300"}
+<img src="img/get_lacunarity.JPG" width="300&quot;/"/>
+
+Illustration of convex hull (dashed line) and voxel hull (green feature) from tree_0129. The proportion of whitespace within the convex hull represents lacunarity (\~20%)
 
 ### 🌲 Generate a Quantitative Structure Model (QSM)
 
@@ -175,7 +177,9 @@ Creates a 3-panel plot showing two vertical profiles (X-Z and Y-Z) and an overhe
 plot_tree(las, res = 0.05, plot = TRUE)
 ```
 
-![Figure illustrating 3 views of tree_0129](img/plot_tree.JPG){width="400"}
+<img src="img/plot_tree.JPG" width="400/"/>
+
+Figure illustrating 3 views of tree_0129
 
 #### Plot Quantitative Structure Model (QSM)
 
@@ -187,7 +191,9 @@ qsm = load_qsm(qsm_file)
 plot_qsm(qsm)
 ```
 
-![`plot_qsm()` output for tree-0723](img/plot_qsm.JPG){width="300"}
+<img src="img/plot_qsm.JPG" width="300/"/>
+
+`plot_qsm()` output for tree-0723
 
 ### Basic Tree Measurements Diagnostic Plot
 
@@ -200,7 +206,9 @@ las = clean_las(las)
 basics_diagnostic_plot(las, height=24.1, cbh=13.9, crown_width=2.29, dbh=0.329, res = 0.1)
 ```
 
-![`basics_diagnostic_plot()` output for tree-0129](img/basics_diagnostic_plot.JPG){width="200"}
+<img src="img/basics_diagnostic_plot.JPG" width="200/"/>
+
+`basics_diagnostic_plot()` output for tree-0129
 
 #### See also
 
@@ -213,4 +221,4 @@ basics_diagnostic_plot(las, height=24.1, cbh=13.9, crown_width=2.29, dbh=0.329, 
 
 ## 📖 Citation
 
-The `treeTraits` package is associated with Cannon et al. (in press) XXXX. Please return at a later data for a full citation.
+The `treeTraits` package is associated with Cannon et al. (in press) XXXX. Please return at a later date for a full citation.
