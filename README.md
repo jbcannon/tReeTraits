@@ -13,7 +13,8 @@ It combines functionality from multiple tools including [TreeQSM](https://github
 -   **Preprocessing**: Recenter, normalize, rotate trees, and clean surrounding vegetation.
 -   **Point Cloud Metrics**: Crown width, height, volume, DBH, crown base height, lever arm, lacunarity, etc.
 -   **QSM Integration**: Run [TreeQSM](https://github.com/InverseTampere/TreeQSM/) from R via MATLAB to compute stem and branching traits.
--   **QSM Metrics**: Center of mass, trunk taper, branch diameter distributions, branching patterns -**Visualization**: Built-in diagnostic plots for inspection and reporting.
+-   **QSM Metrics**: Center of mass, trunk taper, branch diameter distributions, branching patterns
+-   **Visualization**: Built-in diagnostic plots for inspection and reporting.
 
 ## 📦 Installation
 
