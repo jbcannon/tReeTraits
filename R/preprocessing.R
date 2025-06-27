@@ -102,6 +102,7 @@ clean_las = function(las, bole_height=1, quantile=0.001) {
   las = recenter_las(las)
   las = lidR::filter_duplicates(las)
   las = lidR::classify_noise(las, lidR::ivf(res=0.1,n=3))
+  las = lidR::filter_poi(las, Classification != lidR::LASNOISE)
   return(las)
 }
 
