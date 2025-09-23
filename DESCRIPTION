@@ -25,4 +25,5 @@ Imports:
   sf,
   spanner,
   terra,
-  tibble
+  tibble,
+  reticulate
