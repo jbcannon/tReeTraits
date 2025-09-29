@@ -1,9 +1,9 @@
 Package: tReeTraits
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
+Title: Calculate Tree Traits from Terrestrial Lidar
+Version: 0.1.1
 Author: Jeffery B. Cannon (jeffery.cannon@jonesctr.org)
-Maintainer: effery B. Cannon <jeffery.cannon@jonesctr.org>
+Maintainer: Jeffery B. Cannon <jeffery.cannon@jonesctr.org>
 Description: This package integrates several functions for measuring tree architecture from Terrestrial lidar data, including tree properties, crown properties, and tree architecture from a QSM. 
 License: GPL-3
 Encoding: UTF-8
