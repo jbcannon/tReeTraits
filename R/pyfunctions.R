@@ -43,14 +43,18 @@ install_PyTLidar <- function(  envname = "r-reticulate-3.11",
   #Activeate Environment
   reticulate::use_condaenv(envname, required = TRUE)
 
-  # Check if PyTLidar is already installed
+  # Instally roby and PyTLidar if needed
+  if (!reticulate::py_module_available("torch")) {
+    reticulate::py_install(packages='torch', envname=envname, method='conda', pip=TRUE)
+  }
+  if (!reticulate::py_module_available("robpy")) {
+    reticulate::py_install(packages='robpy', envname=envname, method='conda', pip=TRUE)
+  }
   if (!reticulate::py_module_available("PyTLidar")) {
     message("Installing PyTLidar from GitHub into ", envname, "...")
-    reticulate::py_install(
-      packages = "git+https://github.com/Landscape-CV/PyTLidar.git",
-      envname = envname,
-      method = "conda",
-      pip = TRUE
+    reticulate::py_install(packages = "PyTLidar",
+                           envname = envname,
+                           method = "conda", pip = TRUE
     )
   } else {
     message("PyTLidar is already installed in ", envname)
@@ -66,4 +70,52 @@ install_PyTLidar <- function(  envname = "r-reticulate-3.11",
   }
 }
 
-install_PyTLidar()
+qsm <- reticulate::import_from_path("qsm_runner", path = dirname(py_path))
+
+
+#' Run Quantitative Structure Model (QSM) from PyTLidar
+#'
+#' This function runs the PyTLidar TreeQSM pipeline on a terrestrial LiDAR LAS file
+#' from within R using the reticulate interface. Parameters can be adjusted to
+#' control cover set sizes and cylinder fitting behavior.
+#'
+#' @param file Character string. Path to a LAS file to process.
+#' @param ipd Numeric. Initial patch diameter (default = 0.05).
+#' @param pdmin Numeric. Minimum patch diameter for second pass (default = 0.03).
+#' @param pdmax Numeric. Maximum patch diameter for second pass (default = 0.12).
+#' @param brad1 Numeric. Ball radius for first pass (default = 0.06).
+#' @param brad2 Numeric. Ball radius for second pass (default = 0.13).
+#' @param plot Integer (0 or 1). Flag for plot generation during runtime (default = 0).
+#'
+#' @return A data frame containing tree structural metrics output from TreeQSM.
+#'
+#' @examples
+#' \dontrun{
+#'   # Example LAS file
+#'   las_file <- system.file("extdata", "example_pine.las", package = "mypkg")
+#'
+#'   # Run QSM with default parameters
+#'   qsm_results <- run_qsm(las_file)
+#'
+#'   # Run with custom parameters
+#'   qsm_results <- run_qsm(las_file, ipd = 0.08, pdmax = 0.15)
+#' }
+#'
+#' @export
+run_qsm <- function(file, ipd=0.05, pdmin=0.03, pdmax=0.12,
+                    brad1=0.06, brad2=0.13, plot=0) {
+
+  # find the installed path to the Python file
+  py_path <- system.file("python", "qsm_runner.py", package = "tReeTraits")
+
+  # import the module from that path
+  qsm <- reticulate::import_from_path("qsm_runner", path = dirname(py_path))
+
+  # run the Python function
+  res <- qsm$run_qsm(file=file, ipd=ipd, pdmin=pdmin,
+                     pdmax=pdmax, brad1=brad1, brad2=brad2, plot=plot)
+
+  as.data.frame(res)
+}
+
+x = run_qsm('inst/extdata/tree_0129.laz')
