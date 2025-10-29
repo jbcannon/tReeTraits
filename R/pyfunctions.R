@@ -1,3 +1,43 @@
+#' Check for and install Python modules in a reticulate environment
+#'
+#' This function checks if the specified Python modules are available in a
+#' given reticulate-managed Conda environment, and installs any that are missing.
+#'
+#' @param modules Character vector of Python module names to check/install.
+#' @param envname Character string. Name of the reticulate/conda environment to use.
+#'   Default is "r-reticulate-3.11".
+#' @param method Character string specifying installation method for reticulate::py_install.
+#'   Default is "auto".
+#' @export
+#' @examples
+#' \dontrun{
+#' require_module(c("torch", "robpy", "PyTLidar"))
+#' }
+require_module <- function(modules, envname = "r-reticulate-3.11", method = "auto") {
+
+  # --- Input safety checks ---
+  if (missing(modules) || length(modules) == 0) {
+    stop("Please provide a character vector of Python module names in `modules`.")
+  }
+  if (!is.character(modules)) {
+    stop("`modules` must be a character vector of module names.")
+  }
+  if (!is.character(envname) || length(envname) != 1) {
+    stop("`envname` must be a single character string specifying the conda environment.")
+  }
+
+  # --- Loop through modules and install if missing ---
+  for (m in modules) {
+    if (!reticulate::py_module_available(m)) {
+      message("Installing Python module '", m, "' in environment '", envname, "'...")
+      reticulate::py_install(packages = m, envname = envname, method = method, pip = TRUE)
+    } else {
+      message("Python module '", m, "' is already installed in '", envname, "'.")
+    }
+  }
+}
+
+
 #' Install PyTLidar in a reticulate-managed Python environment
 #'
 #' This function installs the PyTLidar package from GitHub into a conda
@@ -40,16 +80,12 @@ install_PyTLidar <- function(  envname = "r-reticulate-3.11",
     message("Using existing conda environment: ", envname)
   }
 
-  #Activeate Environment
+  #Activate Environment
   reticulate::use_condaenv(envname, required = TRUE)
 
   # Instally roby and PyTLidar if needed
-  if (!reticulate::py_module_available("torch")) {
-    reticulate::py_install(packages='torch', envname=envname, method='conda', pip=TRUE)
-  }
-  if (!reticulate::py_module_available("robpy")) {
-    reticulate::py_install(packages='robpy', envname=envname, method='conda', pip=TRUE)
-  }
+  require_module(c('torch', 'numpy', 'robpy'))
+
   if (!reticulate::py_module_available("PyTLidar")) {
     message("Installing PyTLidar from GitHub into ", envname, "...")
     reticulate::py_install(packages = "PyTLidar",
@@ -69,9 +105,6 @@ install_PyTLidar <- function(  envname = "r-reticulate-3.11",
     warning("PyTLidar installation did not succeed. Please check your Python environment.")
   }
 }
-
-qsm <- reticulate::import_from_path("qsm_runner", path = dirname(py_path))
-
 
 #' Run Quantitative Structure Model (QSM) from PyTLidar
 #'
@@ -118,4 +151,4 @@ run_qsm <- function(file, ipd=0.05, pdmin=0.03, pdmax=0.12,
   as.data.frame(res)
 }
 
-x = run_qsm('inst/extdata/tree_0129.laz')
+
