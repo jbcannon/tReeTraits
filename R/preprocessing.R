@@ -24,8 +24,12 @@ normalize_las = function(las, quantile=c(0.001)) {
   #normalize
   ground_level = stats::quantile(las$Z, quantile)
   las@data[, Z := las$Z - ground_level]
+
+  # Update LAS header offsets
+  las@header@PHB$`Z offset` = 0
   #update LAS header
   las = lidR::las_update(las)
+
   return(las)
 }
 
@@ -65,6 +69,10 @@ recenter_las = function(las, height = 1) {
   y_offset = centroid[2]
   las@data[, X := las$X - x_offset]
   las@data[, Y := las$Y - y_offset]
+
+  # Update LAS header offsets
+  las@header@PHB$`X offset` = 0
+  las@header@PHB$`Y offset` = 0
   las = lidR::las_update(las)
   return(las)
 }

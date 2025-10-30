@@ -52,9 +52,9 @@ plot_tree = function(las, res = 0.05, plot=TRUE) {
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
-#' plot_qsm(qsm)
+#' plot_qsm2d(qsm)
 #' @export
-plot_qsm = function(qsm, scale = 150, rotation=TRUE) {
+plot_qsm2d = function(qsm, scale = 150, rotation=TRUE) {
   if(rotation) par(mfrow = c(1,2))
   par(mar=c(2,2,1,1)+0.5)
   ylim = range(qsm[, c('startZ', 'endZ')])
@@ -70,7 +70,31 @@ plot_qsm = function(qsm, scale = 150, rotation=TRUE) {
 }
 
 
-# Diagonistic plot to display basic tree  measurements
+#' Diagnostic Plot of Basic Tree Measurements
+#'
+#' Generates a diagnostic 2D plot showing basic tree measurements such as tree height, crown base height (CBH),
+#' crown width, and diameter at breast height (DBH) over a subsampled LAS point cloud.
+#'
+#' @param las A `LAS` object (from the `lidR` package) containing the tree point cloud.
+#' @param height Numeric. Total tree height.
+#' @param cbh Numeric. Crown base height.
+#' @param crown_width Numeric. Crown width.
+#' @param dbh Numeric. Diameter at breast height.
+#' @param res Numeric. Resolution for point cloud thinning; default is 0.1 m.
+#'
+#' @return A `ggplot` object displaying thinned tree points and markers for key measurements.
+#'
+#' @details
+#' The function first thins the point cloud using `lidR::decimate_points()` to improve plotting speed.
+#' Then it overlays key measurement lines and markers for height, crown width, DBH, and crown base height.
+#'
+#' @examples
+#' \dontrun{
+#' las <- lidR::readLAS("inst/extdata/tree_0129.laz")
+#' basics_diagnostic_plot(las, height = 15, cbh = 5, crown_width = 4, dbh = 0.35)
+#' }
+#'
+#' @export
 basics_diagnostic_plot = function(las, height, cbh, crown_width, dbh, res=0.1) {
   las_thin = lidR::decimate_points(las, lidR::random_per_voxel(res=res))
   marker_df = data.frame(
@@ -92,36 +116,101 @@ basics_diagnostic_plot = function(las, height, cbh, crown_width, dbh, res=0.1) {
   return(crown_met)
 }
 
-# Diagonistic plot to display generated hulls
-hull_diagnostic_plot = function(las, res=0.1) {
-  if(!'Crown' %in% colnames(las@data)) stop('las does not contain column called `Crown` use `segment_crown()`')
-  crown = lidR::filter_poi(las, Crown == 1)
-  convex_hull = convex_hull_2D(crown)
-  voxel_hull = voxel_hull_2D(crown, res = res)
-  x = ggplot2::ggplot() + ggplot2::geom_sf(data=voxel_hull, fill='chartreuse4') +
-    ggplot2::geom_sf(data=convex_hull, fill=NA, linewidth=1, linetype='dashed', color=grey(0.2)) +
+#' Diagnostic Plot of Crown Convex Hulls
+#'
+#' Generates a 2D diagnostic plot to visualize the convex hulls and voxelized hulls
+#' of tree crowns in a LAS point cloud. Useful for checking results of crown segmentation.
+#'
+#' @param las A `LAS` object from the `lidR` package. Must contain a column named `Crown`.
+#' @param res Numeric. Resolution for voxelization in `voxel_hull_2D()`. Default is 0.1.
+#'
+#' @return A `ggplot` object displaying convex hulls (dashed) and voxel hulls (filled).
+#'
+#' @details
+#' The function first filters points marked as crown (`Crown == 1`) and then
+#' computes both the 2D convex hull and a voxelized 2D hull. The resulting plot
+#' overlays the voxel hull in color and the convex hull as a dashed outline.
+#'
+#' @examples
+#' \dontrun{
+#' las <- readLAS("tree.laz")
+#' las <- segment_crown(las)  # adds `Crown` column
+#' hull_diagnostic_plot(las)
+#' }
+#'
+#' @export
+hull_diagnostic_plot <- function(las, res = 0.1) {
+  if (!'Crown' %in% colnames(las@data)) {
+    stop('LAS object does not contain column called `Crown`. Use `segment_crown()` first.')
+  }
+
+  crown <- lidR::filter_poi(las, Crown == 1)
+  convex_hull <- convex_hull_2D(crown)
+  voxel_hull <- voxel_hull_2D(crown, res = res)
+
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = voxel_hull, fill = 'chartreuse4') +
+    ggplot2::geom_sf(data = convex_hull, fill = NA, linewidth = 1, linetype = 'dashed', color = grey(0.2)) +
     ggplot2::theme_bw() +
     ggplot2::theme(panel.grid = ggplot2::element_blank())
-  return(x)
 }
 
 
-# Diagnostic plot to view taper function. Wrapper for fit_taper_Kozak which
-# has a plot output.
-taper_diagnostic_plot = function(qsm, dbh) {
-  return(fit_taper_Kozak(qsm, dbh, plot=FALSE)$plot)
+#' Diagnostic Plot of Tree Taper
+#'
+#' Generates a diagnostic plot showing the fitted taper of a tree using the Kozak model.
+#' This is a simple wrapper around `fit_taper_Kozak()` to extract its plot output.
+#'
+#' @param qsm A QSM object (e.g., data frame returned by `run_treeqsm()`) containing cylinder information.
+#' @param dbh Numeric. Diameter at breast height of the tree, used as input to the taper function.
+#'
+#' @return A `ggplot` object showing the fitted taper along the tree stem.
+#'
+#' @details
+#' The function calls `fit_taper_Kozak()` with `plot = FALSE` and returns the plot component.
+#' This allows quick visualization of the taper without modifying the underlying QSM.
+#'
+#' @examples
+#' \dontrun{
+#' qsm <- run_treeqsm("tree_0129.laz")
+#' taper_diagnostic_plot(qsm, dbh = 0.25)
+#' }
+#'
+#' @export
+taper_diagnostic_plot <- function(qsm, dbh) {
+  fit_taper_Kozak(qsm, dbh, plot = FALSE)$plot
 }
 
-# diagnostic plot to view branch diameter distribution. Simple wrapper
-# for `branch_size_distribution` which does most of the heavy lifting.
-branch_distribution_plot = function(qsm) {
-  branches = branch_size_distribution(qsm, plot=FALSE)
-  myPlot = ggplot2::ggplot(branches, ggplot2::aes(x=midpoint, y=volume_mL)) +
-    ggplot2::geom_col() + ggplot2::theme_bw() +
+#' Diagnostic Plot of Branch Diameter Distribution
+#'
+#' Generates a diagnostic plot showing the distribution of branch diameters in a QSM.
+#' This is a wrapper around `branch_size_distribution()` which computes branch metrics.
+#'
+#' @param qsm A QSM object (e.g., data frame returned by `run_treeqsm()`) containing cylinder information.
+#'
+#' @return A `ggplot` object displaying branch diameter (x-axis) versus total branch volume (y-axis).
+#'
+#' @details
+#' The function calls `branch_size_distribution()` with `plot = FALSE` to compute branch volumes
+#' at midpoints of diameter bins, then generates a bar plot showing total volume per diameter bin.
+#'
+#' @examples
+#' \dontrun{
+#' qsm <- run_treeqsm("tree_0129.laz")
+#' branch_distribution_plot(qsm)
+#' }
+#'
+#' @export
+branch_distribution_plot <- function(qsm) {
+  branches <- branch_size_distribution(qsm, plot = FALSE)
+  myPlot <- ggplot2::ggplot(branches, ggplot2::aes(x = midpoint, y = volume_mL)) +
+    ggplot2::geom_col() +
+    ggplot2::theme_bw() +
     ggplot2::theme(panel.grid = ggplot2::element_blank()) +
     ggplot2::labs(x = 'Branch diameter (cm)', y = 'Total volume (mL)')
   return(myPlot)
 }
+
 
 
 #' Generate a diagnostic plot to assess basic metrics and QSM output
@@ -162,4 +251,102 @@ full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1
   y = ggpubr::ggarrange(u, v, w, ncol=3, widths= c(0.2, 0.4,0.4), labels=c('F', 'G', 'H'))
   z = ggpubr::ggarrange(x, y, nrow=2)
   return(z)
+}
+
+
+#' Plot QSM Cylinders in 3D
+#'
+#' Renders a 3D visualization of tree cylinders (from a Quantitative Structure Model, QSM)
+#' using actual geometric radii. Each cylinder is drawn between its start and end coordinates
+#' with the radius provided in the QSM data.
+#'
+#' @param qsm A data frame or tibble containing QSM cylinder data with columns:
+#'   \code{startX}, \code{startY}, \code{startZ}, \code{endX}, \code{endY}, \code{endZ}, and \code{radius_cyl}.
+#' @param bg Background color for the 3D plot. Defaults to \code{"white"}.
+#' @param color Cylinder color. Defaults to \code{"black"}.
+#' @param alpha Transparency level for cylinders, between 0 (fully transparent) and 1 (fully opaque).
+#'   Defaults to \code{0.7}.
+#'
+#' @details
+#' This function uses \pkg{rgl} to draw 3D cylinders representing each segment
+#' of a tree model. It is intended for visualizing QSM output such as that
+#' produced by \pkg{PyTLidar} or other tree reconstruction algorithms.
+#'
+#' For large models, rendering may be slow because each cylinder is drawn as
+#' a separate mesh. Consider downsampling or filtering before plotting.
+#'
+#' @return Opens an interactive 3D rgl window with rendered cylinders.
+#'   Returns \code{NULL} invisibly.
+#'
+#' @examples
+#' \dontrun{
+#' # Load QSM output (example path)
+#' qsm <- read_qsm_PyTLidar("inst/extdata/tree_0129/cylinder.txt")
+#'
+#' # Plot with real radii
+#' plot_qsm_cylinders(qsm, color = "forestgreen", alpha = 0.6)
+#' }
+#'
+#' @importFrom rgl open3d bg3d aspect3d cylinder3d shade3d title3d
+#' @export
+plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {
+  # Open new 3D window
+  rgl::open3d()
+  rgl::bg3d(bg)
+  rgl::aspect3d(1, 1, 1)
+
+  # Use lapply for efficiency (draws cylinders directly)
+  invisible(apply(qsm, 1, function(row) {
+    rgl::cylinder3d(
+      rbind(
+        c(row["startX"], row["startY"], row["startZ"]),
+        c(row["endX"], row["endY"], row["endZ"])
+      ),
+      radius = as.numeric(row["radius_cyl"]),
+      sides = 8
+    ) |>
+      rgl::shade3d(color = color, alpha = alpha)
+  }))
+  rgl::axes3d()
+  rgl::title3d(xlab = "X", ylab = "Y", zlab = "Z")
+
+}
+
+
+#' Extract patch diameter parameters from a QSM filename
+#'
+#' Internal helper function to parse patch diameters (D, DI, DA) from
+#' a PyTLidar-generated QSM filename. Falls back to default values if not present.
+#'
+#' @param filepath Character. Full path to the QSM file.
+#' @param default_patch1 Numeric. Default value for D (patch_diam1).
+#' @param default_patch2min Numeric. Default value for DI (patch_diam2min).
+#' @param default_patch2max Numeric. Default value for DA (patch_diam2max).
+#'
+#' @return A named list with \code{patch_diam1}, \code{patch_diam2min}, \code{patch_diam2max}.
+#' @keywords internal
+extract_patch_params <- function(filepath,
+                                 default_patch1,
+                                 default_patch2min,
+                                 default_patch2max) {
+
+  filename <- tools::file_path_sans_ext(basename(filepath))
+
+  # Extract D (patch1)
+  patch1 <- as.numeric(stringr::str_match(filename, "D([0-9.]+)")[,2])
+  if (is.na(patch1)) patch1 <- default_patch1
+
+  # Extract DI (patch2min)
+  patch2min <- as.numeric(stringr::str_match(filename, "DI([0-9.]+)")[,2])
+  if (is.na(patch2min)) patch2min <- default_patch2min
+
+  # Extract DA (patch2max)
+  patch2max <- as.numeric(stringr::str_match(filename, "DA([0-9.]+)")[,2])
+  if (is.na(patch2max)) patch2max <- default_patch2max
+
+  return(list(
+    patch_diam1  = patch1,
+    patch_diam2min = patch2min,
+    patch_diam2max = patch2max
+  ))
 }

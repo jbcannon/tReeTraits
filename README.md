@@ -12,7 +12,7 @@ It combines functionality from multiple tools including [TreeQSM](https://github
 
 -   **Preprocessing**: Recenter, normalize, rotate trees, and clean surrounding vegetation.
 -   **Point Cloud Metrics**: Crown width, height, volume, DBH, crown base height, lever arm, lacunarity, etc.
--   **QSM Integration**: Run [TreeQSM](https://github.com/InverseTampere/TreeQSM/) from R via MATLAB to compute stem and branching traits.
+-   **QSM Integration**: Run [TreeQSM](https://github.com/InverseTampere/TreeQSM/) from R via [PyTLiDAR](https://github.com/Landscape-CV/PyTLiDAR) to compute stem and branching traits.
 -   **QSM Metrics**: Center of mass, trunk taper, branch diameter distributions, branching patterns
 -   **Visualization**: Built-in diagnostic plots for inspection and reporting.
 
@@ -34,24 +34,31 @@ remotes::install_github("jbcannon/tReeTraits")
 
 ## 🔧 Requirements (for QSM features)
 
-If you plan to generate Quantitative Structure Models (QSMs), you'll need:
+To generate Quantitative Structure Models (QSMs), you'll need a Python environment and the [`PyTLidar`](https://github.com/Landscape-CV/PyTLiDAR)\` library.
 
-### MATLAB Requirements
+### 1. Install Conda
 
--   A licensed installation of <a href=https://www.mathworks.com/help/install/ug/install-products-with-internet-connection.html> **MATLAB**</a>
--   Toolboxes
-    -   <a href=https://www.mathworks.com/matlabcentral/answers/4707-how-can-i-download-parallel-computing-toolbox>Parallel Computing Toolbox</a>
-    -   <a href=https://www.mathworks.com/products/statistics.html>Statistics and Machine Learning Toolbox</a>
+Install either Miniconda (recommended) or Anaconda:
 
-### TreeQSM Requirements
+-   📦 [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions) (recommended, lightweight)
+-   🐍 [Anaconda](https://www.anaconda.com/download) (full distribution)
 
--   Download the <a href=https://github.com/InverseTampere/TreeQSM>TreeQSM<a> codebase from Github
+> 💡 Tip: Miniconda is smaller and faster to set up.
+
+### 1. Install [`PyTLidar`](https://github.com/Landscape-CV/PyTLiDAR)
+
+Once Conda is isntalled, you can install the Python dependency directly from within R using the helper function:
+
+```{r}
+install_PyTLidar()
+```
 
 ## 🚀 Getting Started
 
 ### Pre-processing an Example tree
 
 ```{r}
+
 library(tReeTraits)
 library(lidR)
 
@@ -64,7 +71,7 @@ las_clean <- clean_las(las, bole_height = 2)
 plot_tree(las_clean)
 ```
 
-<img src="img/clean_las_ex.jpg" width="300"/>
+<img src="man/figures/clean_las_ex.jpg" width="300"/>
 
 Pine tree with vegetation around bole removed.
 
@@ -91,66 +98,91 @@ volume_voxel <- get_crown_volume_voxel(las_crown)
 
 ```
 
-<img src="img/get_lacunarity.JPG" width="300&quot;/"/>
+<img src="man/figures/get_lacunarity.JPG" width="300&quot;/"/>
 
 Illustration of convex hull (dashed line) and voxel hull (green feature) from tree_0129. The proportion of whitespace within the convex hull represents lacunarity (\~20%)
 
-### 🌲 Generate a Quantitative Structure Model (QSM)
+### 🌲 Example: Running TreeQSM from tReeTraits to generate a Quantitative Structure Model (QSM)
 
-The `tReeTraits` package includes tools to prepare and run <a href=https://github.com/InverseTampere/TreeQSM>TreeQSM</a> from within R using segmented tree point clouds. The following example shows how to create a QSM using a cleaned `.las` file, generate a `.mat` file for MATLAB, and run TreeQSM.
+This example demonstrates how to:
 
-#### Steps
-
--   Load and clean a single-tree LAS file
--   Convert the LAS file to .mat format
--   Set TreeQSM input parameters
--   Run TreeQSM from R
--   Load the resulting QSM
+1.  Load a single-tree LAS file
+2.  Check for PyTLidar installation
+3.  Configure TreeQSM input parameters
+4.  Run TreeQSM directly from R
+5.  Load and visualize the resulting QSM in 2D and 3D
 
 ```{r}
-library(lidR)
 library(tReeTraits)
 
-# Step 1: Load and clean the LAS file
-las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
-las = filter_poi(las, Intensity > 44000)  # Remove foliage
-las = clean_las(las)
+# Define input file and output directory
+file <- system.file("extdata", "tree_0744.laz", package="tReeTraits")
+tree_id <- tools::file_path_sans_ext(basename(file)) #extract tree id (or set it yourself)
+output_dir <- "C:/Users/yourname/desktop/myTree/"
 
-# Step 2: Convert to .mat format for TreeQSM
-tree_mat = las_to_mat(las)
+# ---- Step 1. Ensure PyTLidar is available ----
+# This checks for a working Python environment with PyTLidar installed.
+# If missing, it installs automatically via reticulate.
+if (!check_PyTLidar_install()) {
+  message("Installing PyTLidar environment ...")
+  install_PyTLidar()
+}
 
-# Step 3: Get or modify default TreeQSM parameters
-params = default_qsm_inputs()
-print(params) #view and change params if you wish
-params$PatchDiam2Max = c(0.05, 0.06, 0.07)  # Optional customization
-
-# Step 4: Run TreeQSM from R
-# TreeQSM directory should point to the directory where TreeQSM is downloaded.
-qsm_file = run_qsm(
-  tree_mat = tree_mat,
-  unique_id = "Tree_0744",
-  output_results = "R:/landscape_ecology/projects/canopy-traits/qsm-results/",
-  TreeQSM_directory = "R:/landscape_ecology/projects/canopy-traits/docs/TreeQSM/",
-  parameter_inputs = params
+# ---- Step 2. Run TreeQSM ----
+# The function runs the TreeQSM algorithm on a single-tree point cloud (.laz or .las).
+# Adjust parameters for reconstruction resolution and patch size.
+# You can set multiple parameters and treeQSM optimizes each combination
+qsm_result <- run_treeqsm(
+  file = file,
+  intensity_threshold = 40000,   # Filter out low-intensity noise points
+  resolution = 0.02,             # Voxel resolution; lower = finer detail but slower
+  patch_diam1 = c(0.05, 0.1),    # Primary patch diameter
+  patch_diam2min = c(0.04, 0.05), # Minimum secondary patch size
+  patch_diam2max = c(0.12, 0.14), # Maximum secondary patch size
+  verbose = TRUE                 # Print progress to console
 )
 
-# Step 5: Load the resulting QSM
-qsm = load_qsm(qsm_file)
-head(qsm)
-plot_qsm(qsm)
+# ---- Step 3. Save results ----
+# This writes the QSM reconstruction, parameter table to disk.
+write_qsm(
+  qsm_result,
+  tree_id = tree_id,
+  out_dir = output_dir
+)
+
+# ---- Step 4. Inspect model and outputs ----
+# qsm_result is a list containing:
+# - $qsm: data.frame of cylinder parameters
+# - $qsm_pars: TreeQSM reconstruction parameters
+# - $cloud: input point cloud (if retained)
+print(qsm_result)
+
+# ---- Step 5. Visualize QSM ----
+# 2D projection for quick inspection
+plot_qsm2d(qsm_result$qsm, scale = 50)
+
+# Interactive 3D visualization (may take time)
+plot_qsm3d(qsm_result$qsm)
+
 ```
 
 #### Requirements
 
--   MATLAB must be installed and callable from the system command line.
--   The TreeQSM codebase must be present and accessible via TreeQSM_directory.
 -   Requires a .las file representing a single segmented tree with minimal foliage.
 
 ### 📐 Tree Geometry traits from QSM
 
 These functions analyze tree geometry and volume from Quantitative Structure Models (QSMs), enabling detailed trait extraction and modeling.
 
-`branch_volume_weighted_stats(qsm, breaks=NULL, FUN = mean)` Calculates volume-weighted branch diameter statistics using outputs from `branch_size_distribution()`.
+Using the example above, extract the qsm from `qsm_result`
+
+```{r}
+qsm = qsm_result$qsm
+```
+
+Then use the following functions for tree geometry traits
+
+`branch_volume_weighted_stats(qsm_resultqsm, breaks=NULL, FUN = mean)` Calculates volume-weighted branch diameter statistics using outputs from `branch_size_distribution()`.
 
 `get_primary_branches(qsm)` Extracts primary branches (branching order = 1 attached to trunk) from the QSM.
 
@@ -178,7 +210,7 @@ Creates a 3-panel plot showing two vertical profiles (X-Z and Y-Z) and an overhe
 plot_tree(las, res = 0.05, plot = TRUE)
 ```
 
-<img src="img/plot_tree.JPG" width="400/"/>
+<img src="man/figures/plot_tree.JPG" width="400/"/>
 
 Figure illustrating 3 views of tree_0129
 
@@ -192,7 +224,7 @@ qsm = load_qsm(qsm_file)
 plot_qsm(qsm)
 ```
 
-<img src="img/plot_qsm.JPG" width="300/"/>
+<img src="man/figures/plot_qsm.JPG" width="300/"/>
 
 `plot_qsm()` output for tree-0723
 
@@ -207,7 +239,7 @@ las = clean_las(las)
 basics_diagnostic_plot(las, height=24.1, cbh=13.9, crown_width=2.29, dbh=0.329, res = 0.1)
 ```
 
-<img src="img/basics_diagnostic_plot.JPG" width="200/"/>
+<img src="man/figures/basics_diagnostic_plot.JPG" width="200/"/>
 
 `basics_diagnostic_plot()` output for tree-0129
 
