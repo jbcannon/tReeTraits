@@ -146,8 +146,8 @@ qsm_result <- run_treeqsm(
 # This writes the QSM reconstruction, parameter table to disk.
 write_qsm(
   qsm_result,
-  tree_id = tree_id,
-  out_dir = output_dir
+  name = tree_id,
+  output_dir = output_dir
 )
 
 # ---- Step 4. Inspect model and outputs ----
@@ -182,7 +182,7 @@ qsm = qsm_result$qsm
 
 Then use the following functions for tree geometry traits
 
-`branch_volume_weighted_stats(qsm_resultqsm, breaks=NULL, FUN = mean)` Calculates volume-weighted branch diameter statistics using outputs from `branch_size_distribution()`.
+`branch_volume_weighted_stats(qsm_result$qsm, breaks=NULL, FUN = mean)` Calculates volume-weighted branch diameter statistics using outputs from `branch_size_distribution()`.
 
 `get_primary_branches(qsm)` Extracts primary branches (branching order = 1 attached to trunk) from the QSM.
 
