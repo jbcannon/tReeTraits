@@ -150,19 +150,27 @@ write_qsm(
   output_dir = output_dir
 )
 
-# ---- Step 4. Inspect model and outputs ----
-# qsm_result is a list containing:
+# ---- Step 4. Read Saved QSM ----
+# After saving, you can re-load the QSM later for analysis or visualization
+# Assumes the .txt file is saved in output_dir/tree_id/
+qsm_path <- file.path(output_dir, paste0(tree_id, "_qsm.txt"))
+qsm <- load_qsm(qsm_path)
+
+# Print a summary
+cat("Loaded QSM with", nrow(qsm), "cylinders.\n")
+
+# ---- Step 5. Inspect Outputs ----
+# The run_treeqsm() output includes:
 # - $qsm: data.frame of cylinder parameters
 # - $qsm_pars: TreeQSM reconstruction parameters
-# - $cloud: input point cloud (if retained)
 print(qsm_result)
 
-# ---- Step 5. Visualize QSM ----
+# ---- Step 6. Visualize QSM ----
 # 2D projection for quick inspection
-plot_qsm2d(qsm_result$qsm, scale = 50)
+plot_qsm2d(qsm, scale = 50)
 
 # Interactive 3D visualization (may take time)
-plot_qsm3d(qsm_result$qsm)
+plot_qsm3d(qsm)
 
 ```
 

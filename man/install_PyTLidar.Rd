@@ -7,8 +7,9 @@
 install_PyTLidar(
   envname = "r-reticulate-3.11",
   python_version = "3.11",
-  method = c("auto", "conda"),
-  conda = "auto"
+  method = "auto",
+  conda = "auto",
+  reinstall = FALSE
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ Default is `"r-reticulate-3.11"`.}
 \item{method}{Character. Installation method for reticulate, either `"auto"` or `"conda"`.}
 
 \item{conda}{Character. Path to the conda binary or `"auto"`.}
+
+\item{reinstall}{Boolean If TRUE, delete conda environment first.}
 }
 \value{
 Invisibly returns the Python configuration used.

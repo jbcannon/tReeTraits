@@ -387,3 +387,45 @@ get_stem_tilt = function(qsm, terminus_diam_cm = 4) {
   tilt = as.vector(acos(diff(endpoints[,'Z'])/ dist(endpoints)) * 180/pi)
   return(tilt)
 }
+
+
+#' Load and Validate a QSM File
+#'
+#' Reads a Quantitative Structure Model (QSM) file from disk and checks
+#' that it includes all required columns. If any expected columns are missing,
+#' the function stops with an informative error message.
+#'
+#' @param path Character string giving the path to a QSM text file.
+#'
+#' @return A tibble containing the QSM data.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' qsm <- load_qsm("path/to/qsm.txt")
+#' }
+load_qsm <- function(path) {
+  # Required column names
+  required_cols <- c(
+    "startX", "startY", "startZ",
+    "endX", "endY", "endZ",
+    "cyl_ID", "parent_ID", "extension_ID",
+    "radius_cyl", "length", "volume", "branching_order"
+  )
+
+  # Read data
+  qsm <- readr::read_delim(path, show_col_types = FALSE)
+
+  # Check for missing columns
+  missing_cols <- setdiff(required_cols, names(qsm))
+
+  if (length(missing_cols) > 0) {
+    stop(
+      "QSM file is missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  return(qsm)
+}

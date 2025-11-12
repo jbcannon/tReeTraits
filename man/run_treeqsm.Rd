@@ -12,9 +12,7 @@ run_treeqsm(
   patch_diam1 = c(0.05, 0.1),
   patch_diam2min = c(0.04, 0.05),
   patch_diam2max = c(0.12, 0.14),
-  optimization = "trunk+1branch_mean_dis",
-  verbose = TRUE,
-  keep_results = !is.null(output_dir)
+  verbose = TRUE
 )
 }
 \arguments{
@@ -28,11 +26,9 @@ run_treeqsm(
 
 \item{patch_diam1, patch_diam2min, patch_diam2max}{Numeric vectors of patch diameter parameters.}
 
-\item{optimization}{Character. Optimization method for multi-parameter runs.}
-
 \item{verbose}{Logical. Whether to print details during processing.}
 
-\item{keep_results}{Logical. Whether to keep output files.}
+\item{optimization}{Character. Optimization method for multi-parameter runs.}
 }
 \value{
 A QSM object read by \code{read_qsm_PyTLidar()}.

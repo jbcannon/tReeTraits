@@ -26,15 +26,12 @@ require_module <- function(modules, envname = "r-reticulate-3.11") {
     stop("`envname` must be a single character string specifying the conda environment.")
   }
 
-  reticulate::py_install(c("robpy"), envname = "r-reticulate-3.11", pip = TRUE, method='conda')
-  reticulate::py_install(c("torch"), envname = "r-reticulate-3.11", pip = TRUE, method='conda')
-
 
   # --- Loop through modules and install if missing ---
   for (m in modules) {
     if (!reticulate::py_module_available(m)) {
       message("Installing Python module '", m, "' in environment '", envname, "'...")
-      reticulate::py_install(packages = m, envname = envname, method = 'conda', pip = TRUE)
+      reticulate::py_install(packages = m, envname = envname, pip = TRUE)
     } else {
       message("Python module '", m, "' is already installed in '", envname, "'.")
     }
@@ -57,7 +54,7 @@ require_module <- function(modules, envname = "r-reticulate-3.11") {
 #' @export
 install_PyTLidar <- function(envname = "r-reticulate-3.11",
                              python_version = "3.11",
-                             method = c("auto", "conda"),
+                             method = 'auto',
                              conda = "auto",
                              reinstall=FALSE) {
   method <- match.arg(method)
@@ -76,7 +73,7 @@ install_PyTLidar <- function(envname = "r-reticulate-3.11",
   }
 
   # --- Delete and reinstall conda environment if needed
-  if(reisntall) {
+  if(reinstall) {
     if (reticulate::condaenv_exists(envname)) {
       message("Deleting conda environment '", envname, "' with Python ", python_version, "...")
       reticulate::conda_remove(envname)
@@ -164,7 +161,6 @@ check_PyTLidar_install <- function(envname = "r-reticulate-3.11",
 #' @param patch_diam1,patch_diam2min,patch_diam2max Numeric vectors of patch diameter parameters.
 #' @param optimization Character. Optimization method for multi-parameter runs.
 #' @param verbose Logical. Whether to print details during processing.
-#' @param keep_results Logical. Whether to keep output files.
 #' @return A QSM object read by \code{read_qsm_PyTLidar()}.
 #' @export
 run_treeqsm <- function(
@@ -175,9 +171,7 @@ run_treeqsm <- function(
     patch_diam1 = c(0.05, 0.10),
     patch_diam2min = c(0.04, 0.05),
     patch_diam2max = c(0.12, 0.14),
-    optimization = "trunk+1branch_mean_dis",
-    verbose = TRUE,
-    keep_results = !is.null(output_dir)
+    verbose = TRUE
 ) {
 
     envname <- "r-reticulate-3.11"
@@ -187,7 +181,6 @@ run_treeqsm <- function(
     message("Attempting to install PyTLidar environment...")
     install_PyTLidar(envname)
   }
-
   reticulate::use_condaenv(envname, required = TRUE)
 
   # --- Create output directory ---
@@ -214,6 +207,9 @@ run_treeqsm <- function(
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = TRUE)
   myTempFile <- normalizePath(myTempFile, winslash = "/", mustWork = TRUE)
 
+  on.exit(unlink(output_dir, recursive = TRUE, force = TRUE))
+
+
   # --- Build system call ---
   args <- c("-m", "PyTLidar.treeqsm", myTempFile,
             "--outputdirectory", output_dir,
@@ -229,6 +225,7 @@ run_treeqsm <- function(
     length(patch_diam2min) > 1
 
   if (multiple_parameters) {
+    optimization = "trunk+1branch_mean_dis"
     args <- c(args, "--optimum", optimization)
     cat("Running QSM with multiple parameters\n",
         "...Patchdiam1 =", patch_diam1,
@@ -243,7 +240,7 @@ run_treeqsm <- function(
   }
 
   # --- Run PyTLidar ---
-  system2("python", args = args, stdout = "", stderr = "")
+  system2(reticulate::py_config()$python, args = args, stdout = "", stderr = "")
 
   # --- Locate output ---
   results_dir <- file.path(output_dir, "results")
@@ -255,16 +252,27 @@ run_treeqsm <- function(
     return(invisible(NULL))
   }
 
-  # Load QSM and parameters
-  latest_file <- qsm_files[which.max(file.info(qsm_files)$mtime)]
-  qsm <- read_qsm_PyTLidar(latest_file)
-  parameters = extract_patch_params(latest_file, patch_diam1, patch_diam2min, patch_diam2max)
+  # Read in all treedata files and summarize results
+  qsm_fit_files <- list.files(results_dir, pattern = "^treedata.*\\.txt$", recursive = TRUE, full.names = TRUE)
+  qsm_fits <- do.call(rbind, lapply(qsm_fit_files, parse_pytlidar_patch_params))
+  qsm_fits = mutate(qsm_fits, file=qsm_fit_files)
+  qsm_fits = dplyr::mutate(dplyr::rowwise(qsm_fits),
+                           result = mean(c(AverageCylinderPointDistance_Trunk_mm, AverageCylinderPointDistance_BranchOrder1_mm)))
+  qsm_fits = arrange(qsm_fits, result)
 
-  if (!keep_results) {
-    unlink(output_dir, recursive = TRUE, force = TRUE)
+  qsm_files <- list.files(results_dir, pattern = "^cylinder.*\\.txt$", recursive = TRUE, full.names = TRUE)
+  if (length(qsm_files) == 0) {
+    warning("No QSM result files found in output directory.")
+    return(invisible(NULL))
   }
 
-  return(list(qsm_pars=parameters, qsm=qsm))
+  # Load QSM and parameters
+  best_qsm = gsub('/treedata_', '/cylinder_', qsm_fits$file[1])
+  qsm <- read_qsm_PyTLidar(best_qsm)
+  parameters = qsm_fits[1,grep('PatchDiam', names(qsm_fits))]
+  parameters$fit_mm = as.numeric(qsm_fits[1,'result'])
+
+  return(list(qsm_pars=dplyr::select(qsm_fits,!file), qsm=qsm))
 }
 
 
@@ -389,3 +397,69 @@ read_qsm_PyTLidar <- function(cyl_file) {
   return(cyl)
 }
 
+#' Parse PyTLidar Output File (Patch Parameters Only)
+#'
+#' Reads a PyTLidar-generated text file and extracts numeric parameters starting at `PatchDiam1`
+#' into a one-row data frame. Lines containing surface coverage metrics (starting with
+#' `AverageSurfaceCoverage_`) are excluded.
+#'
+#' @param file_path Character. Path to the PyTLidar output text file.
+#'
+#' @return A one-row data frame with parameter names as columns and their values. Numeric values
+#'   are converted to `numeric` type.
+#'
+#' @examples
+#' \dontrun{
+#' file_path <- "path/to/tree_output.txt"
+#' patch_data <- parse_pytlidar_patch_params(file_path)
+#' head(patch_data)
+#' }
+#'
+#' @export
+parse_pytlidar_patch_params <- function(file_path) {
+  # Read all lines from file
+  lines <- readLines(file_path)
+
+  # Remove empty lines
+  lines <- lines[nzchar(lines)]
+
+  # Find the index where PatchDiam1 starts
+  start_idx <- which(grepl("^PatchDiam1", lines))
+  if (length(start_idx) == 0) {
+    stop("PatchDiam1 not found in file.")
+  }
+
+  # Keep only lines from PatchDiam1 onward
+  lines <- lines[start_idx:length(lines)]
+
+  # Filter out surface coverage lines
+  lines <- lines[!grepl("^AverageSurfaceCoverage_", lines)]
+
+  # Initialize list to store parameter-value pairs
+  params <- list()
+
+  # Process each line
+  for (line in lines) {
+    # Split by whitespace or tab
+    split_line <- strsplit(line, "\\s+")[[1]]
+
+    # Parameter name is first element
+    name <- split_line[1]
+
+    # Combine remaining elements as value
+    value <- paste(split_line[-1], collapse = " ")
+
+    # Attempt numeric conversion
+    num_value <- suppressWarnings(as.numeric(value))
+    if (!is.na(num_value)) {
+      value <- num_value
+    }
+
+    # Add to list
+    params[[name]] <- value
+  }
+
+  # Convert to one-row data frame
+  df <- as.data.frame(params, stringsAsFactors = FALSE)
+  return(df)
+}
