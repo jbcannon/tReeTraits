@@ -52,12 +52,14 @@ require_module <- function(modules, envname = "r-reticulate-3.11") {
 #' @param python_version Character. Python version to install (default `"3.11"`).
 #' @param method Character. Installation method for reticulate, either `"auto"` or `"conda"`.
 #' @param conda Character. Path to the conda binary or `"auto"`.
+#' @param reinstall Boolean If TRUE, delete conda environment first.
 #' @return Invisibly returns the Python configuration used.
 #' @export
 install_PyTLidar <- function(envname = "r-reticulate-3.11",
                              python_version = "3.11",
                              method = c("auto", "conda"),
-                             conda = "auto") {
+                             conda = "auto",
+                             reinstall=FALSE) {
   method <- match.arg(method)
 
   # --- Check if conda is available ---
@@ -71,6 +73,16 @@ install_PyTLidar <- function(envname = "r-reticulate-3.11",
     )
   } else {
     message("Found conda at: ", conda_path)
+  }
+
+  # --- Delete and reinstall conda environment if needed
+  if(reisntall) {
+    if (reticulate::condaenv_exists(envname)) {
+      message("Deleting conda environment '", envname, "' with Python ", python_version, "...")
+      reticulate::conda_remove(envname)
+    } else {
+      message("Conda environment ", envname, " doesn't exist...")
+    }
   }
 
   # --- Create or activate conda environment ---
