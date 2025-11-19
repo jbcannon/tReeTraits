@@ -24,6 +24,7 @@ This package depends on CRAN and GitHub packages:
 install.packages("lidR")
 install.packages("remotes")  # For GitHub installation
 
+remotes::install_github("umr-amap/aRchi")
 remotes::install_github("bi0m3trics/spanner")
 remotes::install_github("lmterryn/ITSMe")
 remotes::install_github("tiagodc/TreeLS")
