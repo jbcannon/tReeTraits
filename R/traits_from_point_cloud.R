@@ -331,6 +331,7 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
 #' the CROWN of a tree. Crowns must be segmented using [segment_crown()].
 #' @param res numeric - resolution of voxelization
 #' @param angle numeric - in degrees, rotation angle about Z axis.
+#' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)

@@ -63,7 +63,11 @@ install_PyTLidar()
 library(tReeTraits)
 library(lidR)
 
+# load example data
 las <- readLAS(system.file("extdata", "tree_0723.las", package = "tReeTraits"))
+
+# or load your own data
+#las <- readLAS("C:/path/to/data/myfile.las")
 
 # Clean and preprocess: recenter, normalize, remove understory vegetation
 las_clean <- clean_las(las, bole_height = 2)
