@@ -2,21 +2,20 @@
 % Please edit documentation in R/pyfunctions.R
 \name{write_qsm}
 \alias{write_qsm}
-\title{Save QSM results and parameters to files}
+\title{Save QSM results and patch parameters}
 \usage{
 write_qsm(qsm, name, output_dir = getwd())
 }
 \arguments{
-\item{qsm}{Output from function `run_treeqsm`. A list containing `qsm` (data.frame of cylinder data) and `qsm_pars` (named list of parameters)}
+\item{qsm}{Output from \code{run_treeqsm()}; a list with \code{qsm} and \code{qsm_pars}.}
 
-\item{name}{Character. Base name to use for output files.}
+\item{name}{Base name to use for output files.}
 
-\item{output_dir}{Character. Directory where files will be written. Defaults to current working directory.}
+\item{output_dir}{Directory where files are written (defaults to current working directory).}
 }
 \value{
-A list with file paths: `qsm` (QSM output) and `pars` (parameter file).
+Invisibly returns a list with file paths: \code{qsm} and \code{pars}.
 }
 \description{
-Internal helper function to write QSM data and its parameters to text files.
-Not intended for end-user calls.
+Writes QSM cylinder data and parameter summaries to tab-delimited text files.
 }

@@ -2,13 +2,13 @@
 % Please edit documentation in R/pyfunctions.R
 \name{run_treeqsm}
 \alias{run_treeqsm}
-\title{Run TreeQSM using PyTLidar}
+\title{Run TreeQSM on a LAS/LAZ file using PyTLidar}
 \usage{
 run_treeqsm(
   file,
+  output_dir = NULL,
   intensity_threshold = 40000,
   resolution = 0.02,
-  output_dir = NULL,
   patch_diam1 = c(0.05, 0.1),
   patch_diam2min = c(0.04, 0.05),
   patch_diam2max = c(0.12, 0.14),
@@ -18,22 +18,33 @@ run_treeqsm(
 \arguments{
 \item{file}{Path to the input LAS or LAZ file.}
 
+\item{output_dir}{Directory to save output files; temporary if NULL.}
+
 \item{intensity_threshold}{Minimum point intensity to retain.}
 
 \item{resolution}{Thinning voxel size (m).}
 
-\item{output_dir}{Directory for results (temporary if NULL).}
+\item{patch_diam1}{Numeric vector of patch diameter 1 parameters.}
 
-\item{patch_diam1, patch_diam2min, patch_diam2max}{Numeric vectors of patch diameter parameters.}
+\item{patch_diam2min}{Numeric vector of minimum patch diameter 2.}
 
-\item{verbose}{Logical. Whether to print details during processing.}
+\item{patch_diam2max}{Numeric vector of maximum patch diameter 2.}
 
-\item{optimization}{Character. Optimization method for multi-parameter runs.}
+\item{verbose}{Logical; whether to print details during processing.}
 }
 \value{
-A QSM object read by \code{read_qsm_PyTLidar()}.
+A list with elements:
+  \describe{
+    \item{qsm_pars}{Data frame of patch parameters and fit metrics.}
+    \item{qsm}{Data frame of cylinder-level QSM output.}
+  }
 }
 \description{
-This function runs the PyTLidar TreeQSM model from R using a LAS file.
-It filters, normalizes, and centers the point cloud, then executes the PyTLidar command-line interface.
+Processes a point cloud, filters and normalizes it, then runs the PyTLidar TreeQSM model
+to reconstruct cylinders representing the tree structure.
+}
+\examples{
+\dontrun{
+run_treeqsm("example_tree.laz")
+}
 }
