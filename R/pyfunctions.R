@@ -1,87 +1,3 @@
-# ---------------------------
-# Internal: Check required Python modules
-# ---------------------------
-#' Check if Python modules are available
-#'
-#' Internal helper that checks if specified Python modules are available in the
-#' current Python environment. Issues a warning if any modules are missing.
-#'
-#' @param modules Character vector of Python module names to check.
-#' @return Logical vector indicating availability of each module.
-#' @keywords internal
-#' @noRd
-.check_python_modules <- function(modules) {
-  if (missing(modules) || length(modules) == 0) stop("Provide Python module names.")
-  available <- vapply(modules, reticulate::py_module_available, logical(1))
-
-  if (!all(available)) {
-    warning(
-      "Missing Python modules: ", paste(modules[!available], collapse = ", "),
-      "\nPlease install them manually. Example:\n",
-      "reticulate::py_install(c('torch','numpy','robpy','PyTLidar'), pip = TRUE)"
-    )
-  }
-  return(available)
-}
-
-# ---------------------------
-# Check if Python 3.11 + PyTLidar environment is ready
-# ---------------------------
-#' Verify Python 3.11 environment for PyTLidar
-#'
-#' Internal helper that checks if Python 3.11 is available and whether required
-#' packages (`torch`, `numpy`, `robpy`, `PyTLidar`) are installed.
-#'
-#' @return Logical indicating whether Python 3.11 and all required modules are available.
-#' @keywords internal
-#' @noRd
-check_pytlidar_env <- function() {
-  py <- tryCatch(reticulate::py_config(), error = function(e) NULL)
-  if (is.null(py)) {
-    message("❌ Python not found. Install Python 3.11 and required packages.")
-    return(FALSE)
-  }
-
-  # Robust version parsing
-  py_version <- as.character(py$version)
-  version_parts <- suppressWarnings(as.numeric(unlist(strsplit(py_version, "\\."))))
-  if (length(version_parts) < 2) {
-    message("❌ Could not parse Python version: ", py$version)
-    return(FALSE)
-  }
-
-  major <- version_parts[1]
-  minor <- version_parts[2]
-
-  if (major != 3 || minor != 11) {
-    message("❌ Python version must be 3.11. Found: ", py$version)
-    return(FALSE)
-  }
-
-  required <- c("torch", "numpy", "robpy", "PyTLidar")
-  avail <- .check_python_modules(required)
-
-  return(all(avail))
-}
-
-# ---------------------------
-# Optional helper to guide user
-# ---------------------------
-#' Guide user to set up PyTLidar Python environment
-#'
-#' Internal helper that prints instructions to install Python 3.11 and
-#' required Python packages for PyTLidar.
-#'
-#' @return Invisibly returns TRUE.
-#' @keywords internal
-#' @noRd
-setup_pytlidar_env <- function() {
-  message(
-    "Ensure Python 3.11 is installed and then install required packages:\n",
-    "reticulate::py_install(c('torch','numpy','robpy','PyTLidar'), pip = TRUE)"
-  )
-  invisible(TRUE)
-}
 
 #' Run TreeQSM on a LAS/LAZ file using PyTLidar
 #'
@@ -116,50 +32,63 @@ run_treeqsm <- function(
     patch_diam2max = c(0.12, 0.14),
     verbose = TRUE
 ) {
-  if (!check_pytlidar_env()) {
+  if (!check_pytlidar_setup()) {
     stop(
-      "PyTLidar environment is not ready.\n",
-      "Install Python 3.11 and packages: torch, numpy, robpy, PyTLidar.\n",
-      "Example:\n",
-      "reticulate::py_install(c('torch','numpy','robpy','PyTLidar'), pip = TRUE)"
+      "PyTLidar environment not ready.\n",
+      "Run check_pytlidar_setup() and follow the printed instructions."
     )
   }
 
-  # --- Prepare output directory ---
+  message("✅ Preparing output directory...")
   if (is.null(output_dir)) {
     output_dir <- file.path(tempdir(check = TRUE), "QSM_tmp")
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    on.exit(unlink(output_dir, recursive = TRUE, force = TRUE), add = TRUE)
+    on.exit({
+      try(unlink(output_dir, recursive = TRUE, force = TRUE))
+    }, add = TRUE)
   } else if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
-
-  # --- Process LAS file ---
-  las <- lidR::readLAS(file, filter = paste0("-thin_with_voxel ", resolution))
-  las <- lidR::filter_poi(las, Intensity > intensity_threshold)
-  las <- tReeTraits::normalize_las(las)
-  las <- tReeTraits::recenter_las(las, height = 1)
-  las <- lidR::las_update(las)
-
-  myTempFile <- tempfile(fileext = ".las", tmpdir = output_dir)
-  lidR::writeLAS(las, myTempFile)
-
-  myTempFile <- normalizePath(myTempFile, winslash = "/", mustWork = TRUE)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = TRUE)
 
-  # --- Build PyTLidar command ---
-  args <- c("-m", "PyTLidar.treeqsm", myTempFile,
-            "--outputdirectory", output_dir,
-            "--custominput",
-            "--ipd", paste(patch_diam1, collapse = " "),
-            "--minpd", paste(patch_diam2min, collapse = " "),
-            "--maxpd", paste(patch_diam2max, collapse = " "))
+  message("✅ Reading and preprocessing LAS file...")
+  las <- lidR::readLAS(file, filter = paste0("-thin_with_voxel ", resolution))
+  las <- lidR::filter_poi(las, Intensity > intensity_threshold)
+  las <- normalize_las(las)
+  las <- recenter_las(las, height = 1)
+  las <- lidR::las_update(las)
 
-  if (verbose) args <- c(args, "--verbose")
+  # las_points is your normalized, recentered LAS point matrix
+  np <- reticulate::import("numpy")
+  P <- as.matrix(las@data[, c("X", "Y", "Z")])
+  P <- np$array(P)  # This is what you pass to Python
 
-  system2(reticulate::py_config()$python, args = args, stdout = "", stderr = "")
+  # Build inputs dictionary for PyTLidar
+  define_input <- reticulate::import("PyTLidar.Utils.define_input", delay_load = TRUE)$define_input
+  inputs_list <- define_input(P, 1, 1, 1)  # 1 tree, 1 model, 1? (use standard args)
+  inputs <- inputs_list[[1]]  # get first dict
 
-  # --- Read results ---
+  # overwrite just the patch diameters
+  patch_diam1 <- c(patch_diam1)
+  patch_diam2min <- c(patch_diam2min)
+  patch_diam2max <- c(patch_diam2max)
+  inputs$PatchDiam1 <- np$array(patch_diam1)
+  inputs$PatchDiam2Min <- np$array(patch_diam2min)
+  inputs$PatchDiam2Max <- np$array(patch_diam2max)
+  inputs$BallRad1 <- np$array(patch_diam1 + 0.01)
+  inputs$BallRad2 <- np$array(patch_diam2max + 0.01)
+
+  message("✅ Running PyTLidar TreeQSM...")
+  # import necessary modules
+  pytlidar <- reticulate::import("PyTLidar", delay_load = TRUE)
+  treeqsm <- reticulate::import("PyTLidar.treeqsm", delay_load = TRUE)
+
+  res <- tryCatch(
+    treeqsm$treeqsm(P, inputs, results_location = output_dir),
+    error = function(e) stop("Error running PyTLidar TreeQSM: ", e$message)
+  )
+
+  message("✅ Reading QSM results...")
   results_dir <- file.path(output_dir, "results")
   if (!dir.exists(results_dir)) results_dir <- output_dir
 
@@ -167,20 +96,176 @@ run_treeqsm <- function(
   if (length(qsm_files) == 0) stop("No QSM result files found.")
 
   qsm_fit_files <- list.files(results_dir, pattern = "^treedata.*\\.txt$", recursive = TRUE, full.names = TRUE)
-  qsm_fits <- do.call(rbind, lapply(qsm_fit_files, parse_pytlidar_patch_params))
+  qsm_fits <- do.call(rbind, lapply(qsm_fit_files, .parse_patch_params))
   qsm_fits$file <- qsm_fit_files
   qsm_fits <- dplyr::mutate(dplyr::rowwise(qsm_fits),
                             result = mean(c(AverageCylinderPointDistance_Trunk_mm, AverageCylinderPointDistance_BranchOrder1_mm)))
   qsm_fits <- dplyr::arrange(qsm_fits, result)
 
   best_qsm <- gsub('/treedata_', '/cylinder_', qsm_fits$file[1])
-  qsm <- read_qsm_PyTLidar(best_qsm)
+  qsm <- read_qsm(best_qsm)
   parameters <- qsm_fits[1, grep('PatchDiam', names(qsm_fits))]
   parameters$fit_mm <- as.numeric(qsm_fits$result[1])
 
   list(qsm_pars = dplyr::select(qsm_fits, !file), qsm = qsm)
 }
 
+
+
+#' Read a PyTLidar QSM cylinder file
+#'
+#' Reads a PyTLidar-generated cylinder file and converts it into a tidy data frame
+#' with start/end coordinates, radius, length, volume, and branching order.
+#'
+#' @param cyl_file Path to the PyTLidar cylinder output file (.txt).
+#' @return A data frame with columns startX, startY, startZ, endX, endY, endZ,
+#'   cyl_ID, parent_ID, extension_ID, radius_cyl, length, volume, branching_order.
+#' @export
+read_qsm <- function(cyl_file) {
+  headers <- stringr::str_split(readLines(cyl_file, n = 1), "\t")[[1]]
+  cyl <- readr::read_delim(cyl_file, skip = 1, col_names = FALSE, delim = "\t")
+
+  new_headers <- c(
+    headers[1:2],                       # radius, length
+    paste0("start", c("X","Y","Z")),    # start coordinates
+    paste0("dir", c("X","Y","Z")),      # direction vector
+    headers[5:length(headers)]
+  )
+  colnames(cyl) <- new_headers
+
+  cyl <- dplyr::mutate(cyl,
+                       endX = startX + dirX * `length (m)`,
+                       endY = startY + dirY * `length (m)`,
+                       endZ = startZ + dirZ * `length (m)`,
+                       cyl_ID = dplyr::row_number(),
+                       parent_ID = parent,
+                       extension_ID = extension,
+                       length = `length (m)`,
+                       radius_cyl = `radius (m)`,
+                       volume = pi * radius_cyl^2 * length,
+                       branching_order = branch_order
+  )
+  cyl = dplyr::select(cyl,
+                      startX, startY, startZ,
+                      endX, endY, endZ,
+                      cyl_ID, parent_ID, extension_ID,
+                      radius_cyl, length, volume,
+                      branching_order
+  )
+
+  cyl
+}
+
+
+
+#' Check and guide setup for PyTLidar
+#'
+#' PyTLidar package is required to create QSMs. This function checks whether a
+#' Python 3.11 environment and the PyTLidar Python package
+#' are available via \pkg{reticulate}. If anything is missing, prints
+#' step-by-step instructions for installing Miniconda, creating a Python 3.11
+#' environment, and installing PyTLidar.
+#' @return Invisibly \code{TRUE} if the Python environment and PyTLidar are
+#'   available and ready. Otherwise, prints instructions and returns
+#'   \code{FALSE} invisibly.
+#' @export
+#' @examples
+#' \dontrun{
+#' # Check your Python + PyTLidar setup
+#' check_pytlidar_setup()
+#'
+#' # If the environment is not ready, follow the printed instructions:
+#' # 1. Install Miniconda if needed
+#' #    reticulate::install_miniconda()
+#' # 2. Create Python 3.11 environment
+#' #    reticulate::conda_create("pytlidar", python = "3.11")
+#' # 3. Tell reticulate to use it
+#' #    reticulate::use_condaenv("pytlidar", required = TRUE)
+#' # 4. Install PyTLidar in that environment
+#' #    reticulate::py_install(c("torch", "numpy", "robpy", "PyTLidar"), pip = TRUE)
+#' # 5. Restart R and re-run check_pytlidar_setup()
+#' }
+#' @keywords utilities setup python reticulate
+check_pytlidar_setup <- function() {
+
+  cat("🔍 Checking Python configuration...\n\n")
+
+  # Attempt to select the pytlidar env if it exists
+  tryCatch(
+    reticulate::use_condaenv("pytlidar", required = TRUE),
+    error = function(e) {
+      cat("❌ Python environment 'pytlidar' not found.\n")
+      .print_miniconda_instructions()
+      return(invisible(FALSE))
+    }
+  )
+
+  # ---- Step 1: Ensure Python is initialized ----
+  cfg <- tryCatch(
+    reticulate::py_config(),
+    error = function(e) NULL
+  )
+
+  if (is.null(cfg)) {
+    cat("❌ No Python detected by reticulate.\n\n")
+    .print_miniconda_instructions()
+    return(invisible(FALSE))
+  }
+
+  # ---- Step 2: Python version ----
+  version <- as.character(cfg$version)
+  major_minor <- paste(strsplit(version, "\\.")[[1]][1:2], collapse = ".")
+
+  if (!identical(major_minor, "3.11")) {
+    cat("❌ Incompatible Python version detected.\n\n")
+    cat("Found Python version: ", version, "\n", sep = "")
+    cat("Required version: Python 3.11\n\n")
+    .print_miniconda_instructions()
+    return(invisible(FALSE))
+  }
+
+  cat("✅ Python 3.11 detected.\n\n")
+
+  # ---- Step 3: pytlidar availability ----
+  ok <- FALSE
+  try({
+    reticulate::import("PyTLidar", delay_load = TRUE)
+    ok <- TRUE
+  }, silent = TRUE)
+
+  if (!ok) {
+    cat("❌ Python package 'PyTLidar' is not installed.\n\n")
+    .print_pytlidar_install_instructions()
+    return(invisible(FALSE))
+  }
+
+  cat("✅ PyTLidar is installed and importable.\n")
+  cat("🎉 Python environment is ready.\n")
+
+  invisible(TRUE)
+}
+
+#' @keywords internal
+#' @noRd
+.print_miniconda_instructions <- function() {
+  cat(
+    "Recommended setup using reticulate-managed Miniconda:\n",
+    "1. Install Miniconda from R:\n",
+    "     reticulate::install_miniconda()\n",
+    "   ⚠️ IMPORTANT: Restart R immediately after this step!\n",
+    "2. In the new R session, create a Python 3.11 environment:\n",
+    "     reticulate::conda_create('pytlidar',
+    \tpackages = 'python=3.11',
+    \tchannels = c('conda-forge'))\n",
+    "3. Install required packages into this environment:\n",
+    "     reticulate::conda_install('pytlidar', packages = c('torch','numpy','robpy','PyTLidar'), pip = TRUE)\n",
+    "4. Tell reticulate to use this environment:\n",
+    "     reticulate::use_condaenv('pytlidar', required = TRUE)\n",
+    "5. Finally, run:\n",
+    "     check_pytlidar_setup()\n",
+    sep = ""
+  )
+}
 
 
 #' @keywords internal
@@ -205,51 +290,6 @@ run_treeqsm <- function(
   }
 
   as.data.frame(params, stringsAsFactors = FALSE)
-}
-
-#' Read a PyTLidar QSM cylinder file
-#'
-#' Reads a PyTLidar-generated cylinder file and converts it into a tidy data frame
-#' with start/end coordinates, radius, length, volume, and branching order.
-#'
-#' @param cyl_file Path to the PyTLidar cylinder output file (.txt).
-#' @return A data frame with columns startX, startY, startZ, endX, endY, endZ,
-#'   cyl_ID, parent_ID, extension_ID, radius_cyl, length, volume, branching_order.
-#' @export
-read_qsm <- function(cyl_file) {
-  headers <- stringr::str_split(readLines(cyl_file, n = 1), "\t")[[1]]
-  cyl <- readr::read_delim(cyl_file, skip = 1, col_names = FALSE, delim = "\t")
-
-  new_headers <- c(
-    headers[1:2],                       # radius, length
-    paste0("start", c("X","Y","Z")),    # start coordinates
-    paste0("dir", c("X","Y","Z")),      # direction vector
-    headers[5:length(headers)]
-  )
-  colnames(cyl) <- new_headers
-
-  cyl <- cyl %>%
-    dplyr::mutate(
-      endX = startX + dirX * `length (m)`,
-      endY = startY + dirY * `length (m)`,
-      endZ = startZ + dirZ * `length (m)`,
-      cyl_ID = dplyr::row_number(),
-      parent_ID = parent,
-      extension_ID = extension,
-      length = `length (m)`,
-      radius_cyl = `radius (m)`,
-      volume = pi * radius_cyl^2 * length,
-      branching_order = branch_order
-    ) %>%
-    dplyr::select(
-      startX, startY, startZ,
-      endX, endY, endZ,
-      cyl_ID, parent_ID, extension_ID,
-      radius_cyl, length, volume,
-      branching_order
-    )
-
-  cyl
 }
 
 #' Save QSM results and patch parameters
@@ -279,3 +319,5 @@ write_qsm <- function(qsm, name, output_dir = getwd()) {
   message("Outputs written to:\n", qsm_file, "\n", pars_file)
   invisible(list(qsm = qsm_file, pars = pars_file))
 }
+
+

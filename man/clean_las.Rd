@@ -21,8 +21,8 @@ ground points are removed during segmentation#'}
 \description{
 Function to normalize, remove noise, remove vegetation, and recenter `LAS`
 representing segmented tree. Vegetation cleaning is accomplished by
-identifying stem points (TreeLS::StemPoints) and removing all but the Stem
-below the `z.treshold`.
+identifying stem points (CrownScrochTLS::StemPoints) and removing all but the Stem
+below the `z.threshold`.
 }
 \examples{
 library(lidR)

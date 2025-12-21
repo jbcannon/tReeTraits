@@ -82,8 +82,8 @@ recenter_las = function(las, height = 1) {
 #'
 #' Function to normalize, remove noise, remove vegetation, and recenter `LAS`
 #' representing segmented tree. Vegetation cleaning is accomplished by
-#' identifying stem points (TreeLS::StemPoints) and removing all but the Stem
-#' below the `z.treshold`.
+#' identifying stem points (CrownScrochTLS::StemPoints) and removing all but the Stem
+#' below the `z.threshold`.
 #' @param las `LAS` object from `lidR` package representing
 #' individually segmented tree
 #' @param bole_height numeric, height threshold below which all stem points
@@ -98,13 +98,13 @@ recenter_las = function(las, height = 1) {
 #' plot(las)
 #' plot(las_cleaned)
 #' @importFrom lidR filter_duplicates classify_noise ivf
-#' @importFrom TreeLS stemPoints
+#' @importFrom CrownScorchTLS stemPoints
 #' @import data.table
 #' @export
 clean_las = function(las, bole_height=1, quantile=0.001) {
   las = normalize_las(las)
   #identify points that are part of the stem and remove them
-  las = suppressMessages(TreeLS::stemPoints(las))
+  las = suppressMessages(CrownScorchTLS::stemPoints(las))
   las = lidR::filter_poi(las, Z >  bole_height | (Z <  bole_height & Stem == TRUE))
   #recenter on the bole.
   las = recenter_las(las)

@@ -245,8 +245,10 @@ get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
   }
   crown = lidR::filter_poi(las, Crown == 1)
   vox = lidR::voxelize_points(crown, res = resolution)
-  vol = suppressWarnings(ITSMe::alpha_volume_pc(vox@data[, c('X','Y','Z')], alpha=alpha))
-  return(c(crown_volume_alpha = vol$av))
+  vox = vox@data[, c('X','Y','Z')]
+  aShape = suppressWarnings(alphashape3d::ashape3d(as.matrix(vox), alpha = alpha, pert = TRUE))
+  vol <- alphashape3d::volume_ashape3d(aShape)
+  return(c(crown_volume_alpha = vol))
 }
 
 
