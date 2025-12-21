@@ -12,7 +12,7 @@ a tree. Crowns must be segmented using [segment_crown()].
 @param resolution numeric - resolution of initial voxelization to increase speed}
 
 \item{alpha}{numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
-See [ITSMe::alpha_volume_pc()].}
+See [alphashape3d::ashape3d].}
 }
 \description{
 This function volume of a `LAS` object by thinning to a resolution specified

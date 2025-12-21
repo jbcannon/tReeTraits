@@ -69,9 +69,6 @@ get_width = function(las, quantiles = c(0.001, 0.999)) {
 #' las = clean_las(las)
 #' print(get_dbh(las))
 #' @importFrom lidR filter_poi add_lasattribute
-#' @importFrom spanner eigen_metrics
-#' @importFrom TreeLS shapeFit
-#' @importFrom magrittr `%>%`
 #' @export
 get_dbh = function(las, intensity_threshold=41000,
                    select_n = 10, verticality_threshold=0.9) {
@@ -86,11 +83,15 @@ get_dbh = function(las, intensity_threshold=41000,
   bole = lidR::filter_poi(las, Intensity > intensity_threshold & Z < 3)
   #filter to speed up processing.
   bole = lidR::decimate_points(bole, lidR::random_per_voxel(res=0.025))
-  eigen = spanner::eigen_metrics(bole)$Verticality
-  bole = lidR::add_lasattribute(bole, eigen, 'Verticality', 'Verticality')
-  bole = lidR::filter_poi(bole, Z> 1 & Z < 2 & Verticality > verticality_threshold)
-  cyl = spanner::cylinderFit(bole, method='ransac', n = select_n, n_best = 3)
-  dbh = cyl$radius*2
+
+  lidR::point_eigenvalues(bole, r = 0.1)
+  bole = add_verticality(bole)
+  bole = lidR::filter_poi(bole, Z> 1 & Z < 2 & verticality > verticality_threshold)
+  #cyl = spanner::cylinderFit(bole, method='ransac', n = select_n, n_best = 3)
+  #radius = cyl$radius
+  radius = pracma::circlefit(bole$X, bole$Y)[3]
+  message('temporarily using pracma::circlefit until cylinderFit is re-instated')
+  dbh = radius*2
   return(c(dbh = as.numeric(dbh)))
 }
 
@@ -226,9 +227,9 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #'  a tree. Crowns must be segmented using [segment_crown()].
 #'  @param resolution numeric - resolution of initial voxelization to increase speed
 #' @param alpha numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
-#' See [ITSMe::alpha_volume_pc()].
+#' See [alphashape3d::ashape3d].
 #' @importFrom lidR voxelize_points filter_poi
-#' @importFrom ITSMe alpha_volume_pc
+#' @importFrom alphashape3d ashape3d
 #' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
@@ -383,3 +384,30 @@ get_crown_lever_arm = function(las, segment_height=0.25, quantile = c(0.001), an
   lever = sum(profile$lever, na.rm=TRUE)
   return(lever)
 }
+
+#' Add point-wise verticality from local PCA
+#'
+#' Computes a verticality metric (0–1) for each point in a LAS object based on
+#' the z-component of the dominant local PCA eigenvector.
+#' @param las A \code{LAS} object.
+#' @param k Number of nearest neighbors for local PCA.
+#' @param name Name of the attribute to store.
+#' @importFrom FNN  get.knnx
+#' @return The input \code{LAS} object with a new attribute.
+#' @examples
+#' las <- lidR::readLAS("tree.laz")
+#' las <- add_verticality(las, k = 20)
+#' @export
+add_verticality <- function(las, k = 30, name = "verticality") {
+
+  xyz <- as.matrix(las@data[, c("X", "Y", "Z")])
+  nn  <- FNN::get.knnx(xyz, xyz, k)$nn.index
+
+  vert <- vapply(seq_len(nrow(xyz)), function(i) {
+    pts <- xyz[nn[i, ], ]
+    abs(eigen(stats::cov(pts), symmetric = TRUE)$vectors[3, 1])
+  }, numeric(1))
+
+  las = lidR::add_lasattribute(las, vert, name, name)
+}
+
