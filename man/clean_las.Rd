@@ -28,6 +28,6 @@ below the `z.threshold`.
 library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las_cleaned = clean_las(las)
-plot(las)
-plot(las_cleaned)
+\dontrun{plot(las)
+plot(las_cleaned)}
 }

@@ -22,7 +22,7 @@ different branch diameter classes (in cm). Outputs a table that can be used
 in other functions to find branch_skewness or branch_volume_weighted_stats()
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 branch_distribution = branch_size_distribution(qsm, plot=TRUE)
 print(branch_distribution)
@@ -34,5 +34,5 @@ branch_volume_weighted_stats(qsm, FUN = function(x) mean(x))
 branch_volume_weighted_stats(qsm, FUN = function(x) median(x))
 
 # volume-weighted skewness
-branch_volume_weighted_stats(qsm, FUN = function(x) 3*(mean(x) - median(x)) / sd(x)))
+branch_volume_weighted_stats(qsm, FUN = function(x) 3*(mean(x) - median(x)) / sd(x))
 }

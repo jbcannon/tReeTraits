@@ -45,6 +45,7 @@ to reconstruct cylinders representing the tree structure.
 }
 \examples{
 \dontrun{
-run_treeqsm("example_tree.laz")
+file <- system.file("extdata", "tree_0744.laz", package="tReeTraits")
+run_treeqsm(file)
 }
 }

@@ -18,9 +18,13 @@
 #'     \item{qsm}{Data frame of cylinder-level QSM output.}
 #'   }
 #' @export
+#' @importFrom lidR readLAS filter_poi las_update
+#' @importFrom reticulate import
+#' @importFrom dplyr mutate rowwise arrange select
 #' @examples
 #' \dontrun{
-#' run_treeqsm("example_tree.laz")
+#' file <- system.file("extdata", "tree_0744.laz", package="tReeTraits")
+#' run_treeqsm(file)
 #' }
 run_treeqsm <- function(
     file,
@@ -32,14 +36,10 @@ run_treeqsm <- function(
     patch_diam2max = c(0.12, 0.14),
     verbose = TRUE
 ) {
-  if (!check_pytlidar_setup()) {
-    stop(
-      "PyTLidar environment not ready.\n",
-      "Run check_pytlidar_setup() and follow the printed instructions."
-    )
-  }
+  # check and setup pytlidar environemnt as needed.
+  .check_pytlidar()
 
-  message("✅ Preparing output directory...")
+  message("Preparing output directory...")
   if (is.null(output_dir)) {
     output_dir <- file.path(tempdir(check = TRUE), "QSM_tmp")
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -51,20 +51,20 @@ run_treeqsm <- function(
   }
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = TRUE)
 
-  message("✅ Reading and preprocessing LAS file...")
-  las <- lidR::readLAS(file, filter = paste0("-thin_with_voxel ", resolution))
-  las <- lidR::filter_poi(las, Intensity > intensity_threshold)
+  message("Reading and preprocessing LAS file...")
+  las <- readLAS(file, filter = paste0("-thin_with_voxel ", resolution))
+  las <- filter_poi(las, .data$Intensity > intensity_threshold)
   las <- normalize_las(las)
   las <- recenter_las(las, height = 1)
-  las <- lidR::las_update(las)
+  las <- las_update(las)
 
   # las_points is your normalized, recentered LAS point matrix
-  np <- reticulate::import("numpy")
+  np <- import("numpy")
   P <- as.matrix(las@data[, c("X", "Y", "Z")])
   P <- np$array(P)  # This is what you pass to Python
 
   # Build inputs dictionary for PyTLidar
-  define_input <- reticulate::import("PyTLidar.Utils.define_input", delay_load = TRUE)$define_input
+  define_input <- import("PyTLidar.Utils.define_input", delay_load = TRUE)$define_input
   inputs_list <- define_input(P, 1, 1, 1)  # 1 tree, 1 model, 1? (use standard args)
   inputs <- inputs_list[[1]]  # get first dict
 
@@ -78,17 +78,17 @@ run_treeqsm <- function(
   inputs$BallRad1 <- np$array(patch_diam1 + 0.01)
   inputs$BallRad2 <- np$array(patch_diam2max + 0.01)
 
-  message("✅ Running PyTLidar TreeQSM...")
+  message("Running PyTLidar TreeQSM...")
   # import necessary modules
-  pytlidar <- reticulate::import("PyTLidar", delay_load = TRUE)
-  treeqsm <- reticulate::import("PyTLidar.treeqsm", delay_load = TRUE)
+  pytlidar <- import("PyTLidar", delay_load = TRUE)
+  treeqsm <- import("PyTLidar.treeqsm", delay_load = TRUE)
 
   res <- tryCatch(
     treeqsm$treeqsm(P, inputs, results_location = output_dir),
     error = function(e) stop("Error running PyTLidar TreeQSM: ", e$message)
   )
 
-  message("✅ Reading QSM results...")
+  message("Reading QSM results...")
   results_dir <- file.path(output_dir, "results")
   if (!dir.exists(results_dir)) results_dir <- output_dir
 
@@ -98,21 +98,69 @@ run_treeqsm <- function(
   qsm_fit_files <- list.files(results_dir, pattern = "^treedata.*\\.txt$", recursive = TRUE, full.names = TRUE)
   qsm_fits <- do.call(rbind, lapply(qsm_fit_files, .parse_patch_params))
   qsm_fits$file <- qsm_fit_files
-  qsm_fits <- dplyr::mutate(dplyr::rowwise(qsm_fits),
-                            result = mean(c(AverageCylinderPointDistance_Trunk_mm, AverageCylinderPointDistance_BranchOrder1_mm)))
-  qsm_fits <- dplyr::arrange(qsm_fits, result)
+  qsm_fits <- mutate(rowwise(qsm_fits),
+                            result = mean(c(.data$AverageCylinderPointDistance_Trunk_mm, .data$AverageCylinderPointDistance_BranchOrder1_mm)))
+  qsm_fits <- arrange(qsm_fits, .data$result)
 
   best_qsm <- gsub('/treedata_', '/cylinder_', qsm_fits$file[1])
-  qsm <- read_qsm(best_qsm)
+  qsm <- .read_qsm_raw(best_qsm)
+
   parameters <- qsm_fits[1, grep('PatchDiam', names(qsm_fits))]
   parameters$fit_mm <- as.numeric(qsm_fits$result[1])
 
-  list(qsm_pars = dplyr::select(qsm_fits, !file), qsm = qsm)
+  list(qsm_pars = select(qsm_fits, !file), qsm = qsm)
 }
 
+#' Read a QSM file output from TreeQSM
+#'
+#' @param qsm_file Path to the  QSM output file (.txt).
+#' @return A data frame with columns startX, startY, startZ, endX, endY, endZ,
+#'   cyl_ID, parent_ID, extension_ID, radius_cyl, length, volume, branching_order.
+#' @importFrom readr read_delim
+#' @examples
+#' # Simply load existing qsm and visulalize
+#' qsm_file <- system.file("extdata", "tree_0744_qsm.txt", package = "tReeTraits")
+#' cyl <- read_qsm(qsm_file)
+#' head(cyl)
+#' \dontrun{
+#' # Run and Load a qsm from a laz file.
+#' # ---- Step 1. Define input file  ----
+#' # Input file
+#' file <- system.file("extdata", "tree_0744.laz", package = "tReeTraits")
+#' tree_id <- tools::file_path_sans_ext(basename(file))
+#'
+#' # ---- Step 2. Run TreeQSM ----
+#' # Multiple parameter combinations can be supplied; TreeQSM optimizes across them
+#' qsm_result <- run_treeqsm(
+#'   file = file,
+#'   intensity_threshold = 40000,
+#'   resolution = 0.02,
+#'   patch_diam1 = c(0.05, 0.1),
+#'   patch_diam2min = c(0.04, 0.05),
+#'   patch_diam2max = c(0.12, 0.14),
+#'   verbose = TRUE
+#' )
+#'
+#' # ---- Step 3. Save results ----
+#' write_qsm(
+#'   qsm_result,
+#'   name = tree_id,
+#'   output_dir = tempdir()
+#' )
+#'
+#' # ---- Step 4. Reload QSM ----
+#' qsm_path <- file.path(tempdir(), paste0(tree_id, "_qsm.txt"))
+#' qsm <- load_qsm(qsm_path)
+#'
+#' # ---- Step 5. Visualize ----
+#' plot_qsm2d(qsm, scale = 50)
+#' plot_qsm3d(qsm)}
+#' @export
+read_qsm <- function(qsm_file) {
+  readr::read_delim(qsm_file, show_col_types = FALSE)
+}
 
-
-#' Read a PyTLidar QSM cylinder file
+#' Read a PyTLidar QSM file
 #'
 #' Reads a PyTLidar-generated cylinder file and converts it into a tidy data frame
 #' with start/end coordinates, radius, length, volume, and branching order.
@@ -120,10 +168,12 @@ run_treeqsm <- function(
 #' @param cyl_file Path to the PyTLidar cylinder output file (.txt).
 #' @return A data frame with columns startX, startY, startZ, endX, endY, endZ,
 #'   cyl_ID, parent_ID, extension_ID, radius_cyl, length, volume, branching_order.
-#' @export
-read_qsm <- function(cyl_file) {
+#' @importFrom stringr str_split
+#' @importFrom readr read_delim
+#' @importFrom dplyr mutate select row_number
+.read_qsm_raw <- function(cyl_file) {
   headers <- stringr::str_split(readLines(cyl_file, n = 1), "\t")[[1]]
-  cyl <- readr::read_delim(cyl_file, skip = 1, col_names = FALSE, delim = "\t")
+  cyl <- readr::read_delim(cyl_file, skip = 1, col_names = FALSE, delim = "\t", show_col_types = FALSE)
 
   new_headers <- c(
     headers[1:2],                       # radius, length
@@ -134,139 +184,27 @@ read_qsm <- function(cyl_file) {
   colnames(cyl) <- new_headers
 
   cyl <- dplyr::mutate(cyl,
-                       endX = startX + dirX * `length (m)`,
-                       endY = startY + dirY * `length (m)`,
-                       endZ = startZ + dirZ * `length (m)`,
-                       cyl_ID = dplyr::row_number(),
-                       parent_ID = parent,
-                       extension_ID = extension,
-                       length = `length (m)`,
-                       radius_cyl = `radius (m)`,
-                       volume = pi * radius_cyl^2 * length,
-                       branching_order = branch_order
-  )
-  cyl = dplyr::select(cyl,
-                      startX, startY, startZ,
-                      endX, endY, endZ,
-                      cyl_ID, parent_ID, extension_ID,
-                      radius_cyl, length, volume,
-                      branching_order
-  )
+                     endX = .data$startX + .data$dirX * .data$`length (m)`,
+                     endY = .data$startY + .data$dirY * .data$`length (m)`,
+                     endZ = .data$startZ + .data$dirZ * .data$`length (m)`,
+                     cyl_ID = dplyr::row_number(),
+                     parent_ID = .data$parent,
+                     extension_ID = .data$extension,
+                     length = .data$`length (m)`,
+                     radius_cyl = .data$`radius (m)`,
+                     volume = pi * .data$radius_cyl^2 * .data$`length (m)`,
+                     branching_order = .data$branch_order)
 
+  cyl <- dplyr::select(cyl, dplyr::all_of(c(
+        "startX", "startY", "startZ",
+        "endX", "endY", "endZ",
+        "cyl_ID", "parent_ID", "extension_ID",
+        "radius_cyl", "length", "volume",
+        "branching_order"
+      ))
+  )
   cyl
 }
-
-
-
-#' Check and guide setup for PyTLidar
-#'
-#' PyTLidar package is required to create QSMs. This function checks whether a
-#' Python 3.11 environment and the PyTLidar Python package
-#' are available via \pkg{reticulate}. If anything is missing, prints
-#' step-by-step instructions for installing Miniconda, creating a Python 3.11
-#' environment, and installing PyTLidar.
-#' @return Invisibly \code{TRUE} if the Python environment and PyTLidar are
-#'   available and ready. Otherwise, prints instructions and returns
-#'   \code{FALSE} invisibly.
-#' @export
-#' @examples
-#' \dontrun{
-#' # Check your Python + PyTLidar setup
-#' check_pytlidar_setup()
-#'
-#' # If the environment is not ready, follow the printed instructions:
-#' # 1. Install Miniconda if needed
-#' #    reticulate::install_miniconda()
-#' # 2. Create Python 3.11 environment
-#' #    reticulate::conda_create("pytlidar", python = "3.11")
-#' # 3. Tell reticulate to use it
-#' #    reticulate::use_condaenv("pytlidar", required = TRUE)
-#' # 4. Install PyTLidar in that environment
-#' #    reticulate::py_install(c("torch", "numpy", "robpy", "PyTLidar"), pip = TRUE)
-#' # 5. Restart R and re-run check_pytlidar_setup()
-#' }
-#' @keywords utilities setup python reticulate
-check_pytlidar_setup <- function() {
-
-  cat("🔍 Checking Python configuration...\n\n")
-
-  # Attempt to select the pytlidar env if it exists
-  tryCatch(
-    reticulate::use_condaenv("pytlidar", required = TRUE),
-    error = function(e) {
-      cat("❌ Python environment 'pytlidar' not found.\n")
-      .print_miniconda_instructions()
-      return(invisible(FALSE))
-    }
-  )
-
-  # ---- Step 1: Ensure Python is initialized ----
-  cfg <- tryCatch(
-    reticulate::py_config(),
-    error = function(e) NULL
-  )
-
-  if (is.null(cfg)) {
-    cat("❌ No Python detected by reticulate.\n\n")
-    .print_miniconda_instructions()
-    return(invisible(FALSE))
-  }
-
-  # ---- Step 2: Python version ----
-  version <- as.character(cfg$version)
-  major_minor <- paste(strsplit(version, "\\.")[[1]][1:2], collapse = ".")
-
-  if (!identical(major_minor, "3.11")) {
-    cat("❌ Incompatible Python version detected.\n\n")
-    cat("Found Python version: ", version, "\n", sep = "")
-    cat("Required version: Python 3.11\n\n")
-    .print_miniconda_instructions()
-    return(invisible(FALSE))
-  }
-
-  cat("✅ Python 3.11 detected.\n\n")
-
-  # ---- Step 3: pytlidar availability ----
-  ok <- FALSE
-  try({
-    reticulate::import("PyTLidar", delay_load = TRUE)
-    ok <- TRUE
-  }, silent = TRUE)
-
-  if (!ok) {
-    cat("❌ Python package 'PyTLidar' is not installed.\n\n")
-    .print_pytlidar_install_instructions()
-    return(invisible(FALSE))
-  }
-
-  cat("✅ PyTLidar is installed and importable.\n")
-  cat("🎉 Python environment is ready.\n")
-
-  invisible(TRUE)
-}
-
-#' @keywords internal
-#' @noRd
-.print_miniconda_instructions <- function() {
-  cat(
-    "Recommended setup using reticulate-managed Miniconda:\n",
-    "1. Install Miniconda from R:\n",
-    "     reticulate::install_miniconda()\n",
-    "   ⚠️ IMPORTANT: Restart R immediately after this step!\n",
-    "2. In the new R session, create a Python 3.11 environment:\n",
-    "     reticulate::conda_create('pytlidar',
-    \tpackages = 'python=3.11',
-    \tchannels = c('conda-forge'))\n",
-    "3. Install required packages into this environment:\n",
-    "     reticulate::conda_install('pytlidar', packages = c('torch','numpy','robpy','PyTLidar'), pip = TRUE)\n",
-    "4. Tell reticulate to use this environment:\n",
-    "     reticulate::use_condaenv('pytlidar', required = TRUE)\n",
-    "5. Finally, run:\n",
-    "     check_pytlidar_setup()\n",
-    sep = ""
-  )
-}
-
 
 #' @keywords internal
 #' @noRd
@@ -299,7 +237,42 @@ check_pytlidar_setup <- function() {
 #' @param qsm Output from \code{run_treeqsm()}; a list with \code{qsm} and \code{qsm_pars}.
 #' @param name Base name to use for output files.
 #' @param output_dir Directory where files are written (defaults to current working directory).
+#' @importFrom utils write.table
 #' @return Invisibly returns a list with file paths: \code{qsm} and \code{pars}.
+#' @examples
+#' \dontrun{
+#' # Run and Load a qsm from a laz file.
+#' # ---- Step 1. Define input file  ----
+#' # Input file
+#' file <- system.file("extdata", "tree_0744.laz", package = "tReeTraits")
+#' tree_id <- tools::file_path_sans_ext(basename(file))
+#'
+#' # ---- Step 2. Run TreeQSM ----
+#' # Multiple parameter combinations can be supplied; TreeQSM optimizes across them
+#' qsm_result <- run_treeqsm(
+#'   file = file,
+#'   intensity_threshold = 40000,
+#'   resolution = 0.02,
+#'   patch_diam1 = c(0.05, 0.1),
+#'   patch_diam2min = c(0.04, 0.05),
+#'   patch_diam2max = c(0.12, 0.14),
+#'   verbose = TRUE
+#' )
+#'
+#' # ---- Step 3. Save results ----
+#' write_qsm(
+#'   qsm_result,
+#'   name = tree_id,
+#'   output_dir = tempdir()
+#' )
+#'
+#' # ---- Step 4. Reload QSM ----
+#' qsm_path <- file.path(tempdir(), paste0(tree_id, "_qsm.txt"))
+#' qsm <- load_qsm(qsm_path)
+#'
+#' # ---- Step 5. Visualize ----
+#' plot_qsm2d(qsm, scale = 50)
+#' plot_qsm3d(qsm)}
 #' @export
 write_qsm <- function(qsm, name, output_dir = getwd()) {
   if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
@@ -314,10 +287,8 @@ write_qsm <- function(qsm, name, output_dir = getwd()) {
   pars <- qsm$qsm_pars
   df <- as.data.frame(t(unlist(pars)))
   colnames(df) <- names(pars)
-  write.table(df, file = pars_file, row.names = FALSE, sep = "\t", quote = FALSE)
+  utils::write.table(df, file = pars_file, row.names = FALSE, sep = "\t", quote = FALSE)
 
   message("Outputs written to:\n", qsm_file, "\n", pars_file)
   invisible(list(qsm = qsm_file, pars = pars_file))
 }
-
-

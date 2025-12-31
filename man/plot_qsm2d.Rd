@@ -20,7 +20,7 @@ Simple function to create a diagnostic plot to view QSMs colored
 by branching order.
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 plot_qsm2d(qsm)
 }

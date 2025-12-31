@@ -19,3 +19,38 @@ Invisibly returns a list with file paths: \code{qsm} and \code{pars}.
 \description{
 Writes QSM cylinder data and parameter summaries to tab-delimited text files.
 }
+\examples{
+\dontrun{
+# Run and Load a qsm from a laz file.
+# ---- Step 1. Define input file  ----
+# Input file
+file <- system.file("extdata", "tree_0744.laz", package = "tReeTraits")
+tree_id <- tools::file_path_sans_ext(basename(file))
+
+# ---- Step 2. Run TreeQSM ----
+# Multiple parameter combinations can be supplied; TreeQSM optimizes across them
+qsm_result <- run_treeqsm(
+  file = file,
+  intensity_threshold = 40000,
+  resolution = 0.02,
+  patch_diam1 = c(0.05, 0.1),
+  patch_diam2min = c(0.04, 0.05),
+  patch_diam2max = c(0.12, 0.14),
+  verbose = TRUE
+)
+
+# ---- Step 3. Save results ----
+write_qsm(
+  qsm_result,
+  name = tree_id,
+  output_dir = tempdir()
+)
+
+# ---- Step 4. Reload QSM ----
+qsm_path <- file.path(tempdir(), paste0(tree_id, "_qsm.txt"))
+qsm <- load_qsm(qsm_path)
+
+# ---- Step 5. Visualize ----
+plot_qsm2d(qsm, scale = 50)
+plot_qsm3d(qsm)}
+}

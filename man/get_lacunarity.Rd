@@ -20,12 +20,12 @@ by defined as 1 - the ratio of a voxelized crown hull and a convex hull.
 See `voxel_hull_2D()` and `convex_hull_2D()`
 }
 \examples{
-las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 cbh = get_crown_base(las, threshold=0.25, sustain=2)
 las = segment_crown(las, cbh)
 get_crown_volume_voxel(las)
 get_crown_volume_alpha(las)
-st_area(convex_hull_2D(las)) #profile area, convex hull
-st_area(voxel_hull_2D(las)) #profile area, voxel hull
+sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 get_lacunarity(las)
 }

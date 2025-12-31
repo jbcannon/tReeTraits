@@ -28,3 +28,10 @@ segments by their height, and then returns the sum of all segments. This
 is proportaionl to drag calculations on the tree assuming  windspeed is
 invariant with height.
 }
+\examples{
+library(lidR)
+las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+las = clean_las(las)
+las = segment_crown(las)
+print(get_crown_lever_arm(las))
+}

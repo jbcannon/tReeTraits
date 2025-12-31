@@ -16,7 +16,7 @@ are attached to the trunk. Returns a tibble containing the
 basal diameter and height of attachment points.
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 primary_branches = get_primary_branches(qsm)
 

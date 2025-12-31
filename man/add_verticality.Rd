@@ -21,6 +21,9 @@ Computes a verticality metric (0–1) for each point in a LAS object based on
 the z-component of the dominant local PCA eigenvector.
 }
 \examples{
-las <- lidR::readLAS("tree.laz")
-las <- add_verticality(las, k = 20)
+\dontrun{
+las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+las = add_verticality(las, k = 20)
+head(las@data)
+}
 }
