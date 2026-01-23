@@ -11,7 +11,27 @@
 #' @param patch_diam1 Numeric vector of patch diameter 1 parameters.
 #' @param patch_diam2min Numeric vector of minimum patch diameter 2.
 #' @param patch_diam2max Numeric vector of maximum patch diameter 2.
+#' @param optimizing_metrics Character vector of  metric names to average and
+#' minimize when selecting the best QSM fit. See Details
 #' @param verbose Logical; whether to print details during processing.
+#' @details
+#' The \code{optimizing_metrics} argument controls which point–to–cylinder distance
+#' summaries are used to evaluate TreeQSM fits. These metrics quantify how closely
+#' reconstructed cylinders match the underlying point cloud and are computed for
+#' different structural components of the tree.
+#'
+#' Available metrics include:
+#' \itemize{
+#'   \item \code{median}, \code{mean}, \code{max}, \code{std}: Overall point–to–cylinder distances.
+#'   \item \code{TrunkMedian}, \code{TrunkMean}, \code{TrunkMax}, \code{TrunkStd}: Trunk-only distances.
+#'   \item \code{BranchMedian}, \code{BranchMean}, \code{BranchMax}, \code{BranchStd}: All branch distances.
+#'   \item \code{Branch1Median}, \code{Branch1Mean}, \code{Branch1Max}, \code{Branch1Std}: First-order branch distances.
+#'   \item \code{Branch2Median}, \code{Branch2Mean}, \code{Branch2Max}, \code{Branch2Std}: Second-order branch distances.
+#' }
+#'
+#' When multiple metrics are supplied, their row-wise mean is computed and minimized
+#' to select the best-fitting QSM, allowing users to balance fit quality across
+#' different tree components.
 #' @return A list with elements:
 #'   \describe{
 #'     \item{qsm_pars}{Data frame of patch parameters and fit metrics.}
@@ -34,14 +54,32 @@ run_treeqsm <- function(
     patch_diam1 = c(0.05, 0.10),
     patch_diam2min = c(0.04, 0.05),
     patch_diam2max = c(0.12, 0.14),
+    optimizing_metrics = c('TrunkMean', 'Branch1Mean'),
     verbose = TRUE
 ) {
+  stopifnot(
+    length(patch_diam1) > 0,
+    length(patch_diam2min) > 0,
+    length(patch_diam2max) > 0
+  )
+  if (length(optimizing_metrics) == 0) {
+    stop("optimizing_metrics must contain at least one valid metric name.")
+  }
+  optimizing_metric_choices = c("median", "mean", "max", "std", "TrunkMedian",
+                                "TrunkMean", "TrunkMax", "TrunkStd", "BranchMedian",
+                                "BranchMean", "BranchMax", "BranchStd", "Branch1Median",
+                                "Branch1Mean", "Branch1Max", "Branch1Std", "Branch2Median",
+                                "Branch2Mean", "Branch2Max", "Branch2Std")
+  optimizing_metrics = match.arg(optimizing_metrics,
+                                 choices = optimizing_metric_choices,
+                                 several.ok=TRUE)
+
   # check and setup pytlidar environemnt as needed.
   .check_pytlidar()
 
   message("Preparing output directory...")
   if (is.null(output_dir)) {
-    output_dir <- file.path(tempdir(check = TRUE), "QSM_tmp")
+    output_dir <- file.path(tempdir(check = TRUE), paste0("QSM_tmp_", Sys.getpid()))
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     on.exit({
       try(unlink(output_dir, recursive = TRUE, force = TRUE))
@@ -51,12 +89,13 @@ run_treeqsm <- function(
   }
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = TRUE)
 
+  # Thin, intensity-filter, normalize, and recenter point cloud
   message("Reading and preprocessing LAS file...")
   las <- readLAS(file, filter = paste0("-thin_with_voxel ", resolution))
   las <- filter_poi(las, .data$Intensity > intensity_threshold)
   las <- normalize_las(las)
   las <- recenter_las(las, height = 1)
-  las <- las_update(las)
+  las <- lidR::las_update(las)
 
   # las_points is your normalized, recentered LAS point matrix
   np <- import("numpy")
@@ -66,7 +105,12 @@ run_treeqsm <- function(
   # Build inputs dictionary for PyTLidar
   define_input <- import("PyTLidar.Utils.define_input", delay_load = TRUE)$define_input
   inputs_list <- define_input(P, 1, 1, 1)  # 1 tree, 1 model, 1? (use standard args)
-  inputs <- inputs_list[[1]]  # get first dict
+  stopifnot(
+  length(patch_diam1) > 0,
+  length(patch_diam2min) > 0,
+  length(patch_diam2max) > 0
+)
+inputs <- inputs_list[[1]]  # get first dict
 
   # overwrite just the patch diameters
   patch_diam1 <- c(patch_diam1)
@@ -77,6 +121,9 @@ run_treeqsm <- function(
   inputs$PatchDiam2Max <- np$array(patch_diam2max)
   inputs$BallRad1 <- np$array(patch_diam1 + 0.01)
   inputs$BallRad2 <- np$array(patch_diam2max + 0.01)
+  inputs$savemat = 0
+  inputs$savepdf=0
+  if(!verbose) inputs$disp=1
 
   message("Running PyTLidar TreeQSM...")
   # import necessary modules
@@ -88,27 +135,35 @@ run_treeqsm <- function(
     error = function(e) stop("Error running PyTLidar TreeQSM: ", e$message)
   )
 
-  message("Reading QSM results...")
-  results_dir <- file.path(output_dir, "results")
-  if (!dir.exists(results_dir)) results_dir <- output_dir
+  results = res[[1]]
+  # Ensure results is always a list of fits
+  if (!all(sapply(results, function(x) "pmdistance" %in% names(x)))) {
+    results <- list(results)
+  }
+  metrics = setdiff(names(results[[1]]$pmdistance), "CylDist")
+  fits <- lapply(results, function(x) {
+    list(
+      PatchDiam1    = x$PatchDiam1,
+      PatchDiam2Max = x$PatchDiam2Max,
+      PatchDiam2Min = x$PatchDiam2Min,
+      file          = x$file_id
+    ) |>
+      c(as.list(vapply(metrics, function(m) x$pmdistance[[m]], numeric(1))))
+  }) |>
+    do.call(rbind.data.frame, args = _) |>
+    as.data.frame()
+  fits$distance <- rowMeans(fits[, optimizing_metrics, drop = FALSE], na.rm = TRUE)
+  fits = dplyr::arrange(fits, distance)
+  parameters = fits %>% slice(1) %>%
+    dplyr::select(starts_with("PatchDiam"), distance, dplyr::all_of(optimizing_metrics))
 
-  qsm_files <- list.files(results_dir, pattern = "^cylinder.*\\.txt$", recursive = TRUE, full.names = TRUE)
-  if (length(qsm_files) == 0) stop("No QSM result files found.")
-
-  qsm_fit_files <- list.files(results_dir, pattern = "^treedata.*\\.txt$", recursive = TRUE, full.names = TRUE)
-  qsm_fits <- do.call(rbind, lapply(qsm_fit_files, .parse_patch_params))
-  qsm_fits$file <- qsm_fit_files
-  qsm_fits <- mutate(rowwise(qsm_fits),
-                            result = mean(c(.data$AverageCylinderPointDistance_Trunk_mm, .data$AverageCylinderPointDistance_BranchOrder1_mm)))
-  qsm_fits <- arrange(qsm_fits, .data$result)
-
-  best_qsm <- gsub('/treedata_', '/cylinder_', qsm_fits$file[1])
-  qsm <- .read_qsm_raw(best_qsm)
-
-  parameters <- qsm_fits[1, grep('PatchDiam', names(qsm_fits))]
-  parameters$fit_mm <- as.numeric(qsm_fits$result[1])
-
-  list(qsm_pars = select(qsm_fits, !file), qsm = qsm)
+  #grab the best qsm and read it in.
+  if (!file.exists(best_qsm)) {
+    stop("Best QSM file not found: ", best_qsm)
+  }
+  best_qsm = file.path(output_dir, 'results', paste0('cylinder_', fits$file[1], '.txt'))
+  qsm <- .read_qsm_raw(normalizePath(best_qsm))
+  list(qsm_pars = parameters, qsm = qsm)
 }
 
 #' Read a QSM file output from TreeQSM

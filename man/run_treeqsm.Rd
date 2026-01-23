@@ -12,6 +12,7 @@ run_treeqsm(
   patch_diam1 = c(0.05, 0.1),
   patch_diam2min = c(0.04, 0.05),
   patch_diam2max = c(0.12, 0.14),
+  optimizing_metrics = c("TrunkMean", "Branch1Mean"),
   verbose = TRUE
 )
 }
@@ -30,6 +31,9 @@ run_treeqsm(
 
 \item{patch_diam2max}{Numeric vector of maximum patch diameter 2.}
 
+\item{optimizing_metrics}{Character vector of  metric names to average and
+minimize when selecting the best QSM fit. See Details}
+
 \item{verbose}{Logical; whether to print details during processing.}
 }
 \value{
@@ -42,6 +46,25 @@ A list with elements:
 \description{
 Processes a point cloud, filters and normalizes it, then runs the PyTLidar TreeQSM model
 to reconstruct cylinders representing the tree structure.
+}
+\details{
+The \code{optimizing_metrics} argument controls which point–to–cylinder distance
+summaries are used to evaluate TreeQSM fits. These metrics quantify how closely
+reconstructed cylinders match the underlying point cloud and are computed for
+different structural components of the tree.
+
+Available metrics include:
+\itemize{
+  \item \code{median}, \code{mean}, \code{max}, \code{std}: Overall point–to–cylinder distances.
+  \item \code{TrunkMedian}, \code{TrunkMean}, \code{TrunkMax}, \code{TrunkStd}: Trunk-only distances.
+  \item \code{BranchMedian}, \code{BranchMean}, \code{BranchMax}, \code{BranchStd}: All branch distances.
+  \item \code{Branch1Median}, \code{Branch1Mean}, \code{Branch1Max}, \code{Branch1Std}: First-order branch distances.
+  \item \code{Branch2Median}, \code{Branch2Mean}, \code{Branch2Max}, \code{Branch2Std}: Second-order branch distances.
+}
+
+When multiple metrics are supplied, their row-wise mean is computed and minimized
+to select the best-fitting QSM, allowing users to balance fit quality across
+different tree components.
 }
 \examples{
 \dontrun{
