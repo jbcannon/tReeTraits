@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 dev.R
 .Rhistory
+.gitattributes
+.github
+.gitignore

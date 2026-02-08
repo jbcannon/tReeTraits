@@ -220,11 +220,15 @@ qsm_volume_distribution = function(qsm, terminus_diam_cm = 4, segment_size=0.5) 
 
   #Summarize terminal section
   terminus = dplyr::filter(trunk_qsm, .data$startZ > terminal_branch.ht)
-  terminus$midpt = apply(terminus[,c('startZ', 'endZ')],1, mean)
-  terminus = dplyr::summarize(terminus, section = 'terminus',
-                              diam_cm = .data$radius_cyl[which.min(.data$startZ)]*200,
-                              ht_m = stats::weighted.mean(.data$midpt, .data$volume),
-                              volume = sum(.data$volume))
+  if(nrow(terminus) == 0 ) {
+    terminus = trunk[NULL,]
+  } else {
+    terminus$midpt = apply(terminus[,c('startZ', 'endZ')],1, mean)
+    terminus = dplyr::summarize(terminus, section = 'terminus',
+                                diam_cm = .data$radius_cyl[which.min(.data$startZ)]*200,
+                                ht_m = stats::weighted.mean(.data$midpt, .data$volume),
+                                volume = sum(.data$volume))
+  }
 
 
   # Summarize primary branch attachment points

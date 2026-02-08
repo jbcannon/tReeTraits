@@ -302,15 +302,16 @@ plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {
 
   # Use lapply for efficiency (draws cylinders directly)
   invisible(apply(qsm, 1, function(row) {
-    rgl::cylinder3d(
-      rbind(
-        c(row["startX"], row["startY"], row["startZ"]),
-        c(row["endX"], row["endY"], row["endZ"])
+    rgl::shade3d(
+      rgl::cylinder3d(
+        rbind(
+          c(row["startX"], row["startY"], row["startZ"]),
+          c(row["endX"], row["endY"], row["endZ"])
+        ),
+        radius = as.numeric(row["radius_cyl"]),
+        sides = 8
       ),
-      radius = as.numeric(row["radius_cyl"]),
-      sides = 8
-    ) |>
-      rgl::shade3d(color = color, alpha = alpha)
+      color = color, alpha = alpha)
   }))
   rgl::axes3d()
   rgl::title3d(xlab = "X", ylab = "Y", zlab = "Z")

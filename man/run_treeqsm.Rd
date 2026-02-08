@@ -48,7 +48,7 @@ Processes a point cloud, filters and normalizes it, then runs the PyTLidar TreeQ
 to reconstruct cylinders representing the tree structure.
 }
 \details{
-The \code{optimizing_metrics} argument controls which point–to–cylinder distance
+The \code{optimizing_metrics} argument controls which point-to-cylinder distance
 summaries are used to evaluate TreeQSM fits. These metrics quantify how closely
 reconstructed cylinders match the underlying point cloud and are computed for
 different structural components of the tree.

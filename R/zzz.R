@@ -2,9 +2,9 @@
 utils::globalVariables(c("X", "Y", "Z", ".data"))
 
 # Set package global option to track whether python setup is completed
-.onLoad <- function(libname, pkgname) {
+.onAttach <- function(libname, pkgname) {
   options(pytlidar.activated = FALSE)
-  message('To enable QSM functions you must run `setup_pytlidar()`')
+  packageStartupMessage('To enable QSM functions you must run `setup_pytlidar()`')
 }
 
 .check_pytlidar <- function() {

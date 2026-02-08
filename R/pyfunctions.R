@@ -15,7 +15,7 @@
 #' minimize when selecting the best QSM fit. See Details
 #' @param verbose Logical; whether to print details during processing.
 #' @details
-#' The \code{optimizing_metrics} argument controls which point–to–cylinder distance
+#' The \code{optimizing_metrics} argument controls which point-to-cylinder distance
 #' summaries are used to evaluate TreeQSM fits. These metrics quantify how closely
 #' reconstructed cylinders match the underlying point cloud and are computed for
 #' different structural components of the tree.
@@ -141,22 +141,28 @@ inputs <- inputs_list[[1]]  # get first dict
     results <- list(results)
   }
   metrics = setdiff(names(results[[1]]$pmdistance), "CylDist")
-  fits <- lapply(results, function(x) {
-    list(
-      PatchDiam1    = x$PatchDiam1,
-      PatchDiam2Max = x$PatchDiam2Max,
-      PatchDiam2Min = x$PatchDiam2Min,
-      file          = x$file_id
-    ) |>
-      c(as.list(vapply(metrics, function(m) x$pmdistance[[m]], numeric(1))))
-  }) |>
-    do.call(rbind.data.frame, args = _) |>
-    as.data.frame()
+  fits <- as.data.frame(
+    do.call(
+      rbind.data.frame,
+      lapply(results, function(x) {
+        c(
+          list(
+            PatchDiam1    = x$PatchDiam1,
+            PatchDiam2Max = x$PatchDiam2Max,
+            PatchDiam2Min = x$PatchDiam2Min,
+            file          = x$file_id
+          ),
+          as.list(
+            vapply(metrics, function(m) x$pmdistance[[m]], numeric(1))
+          )
+        )
+      })
+    )
+  )
   fits$distance <- rowMeans(fits[, optimizing_metrics, drop = FALSE], na.rm = TRUE)
-  fits = dplyr::arrange(fits, distance)
-  parameters = fits |> dplyr::slice(1) |>
-    dplyr::select(starts_with("PatchDiam"), distance, dplyr::all_of(optimizing_metrics))
-
+  fits = dplyr::arrange(fits, .data$distance)
+  parameters = dplyr::select(dplyr::slice(fits, 1),
+                  dplyr::starts_with("PatchDiam"), .data$distance, dplyr::all_of(optimizing_metrics))
   best_qsm = file.path(output_dir, 'results', paste0('cylinder_', fits$file[1], '.txt'))
   qsm <- .read_qsm_raw(normalizePath(best_qsm))
   list(qsm_pars = parameters, qsm = qsm)

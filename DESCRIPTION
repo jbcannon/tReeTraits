@@ -4,7 +4,7 @@ Title: Calculate Tree Traits from Terrestrial Lidar
 Version: 0.1.2
 Author: Jeffery B. Cannon (jeffery.cannon@jonesctr.org)
 Maintainer: Jeffery B. Cannon <jeffery.cannon@jonesctr.org>
-Description: This package integrates several functions for measuring tree architecture from Terrestrial lidar data, including tree properties, crown properties, and tree architecture from a QSM. 
+Description: This package integrates several functions for measuring tree architecture from Terrestrial lidar data, including tree properties, crown properties, and tree architecture from a QSM
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true

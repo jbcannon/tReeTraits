@@ -417,7 +417,7 @@ get_crown_lever_arm = function(las, segment_height=0.25, quantile = c(0.001), an
 
 #' Add point-wise verticality from local PCA
 #'
-#' Computes a verticality metric (0–1) for each point in a LAS object based on
+#' Computes a verticality metric (0-1) for each point in a LAS object based on
 #' the z-component of the dominant local PCA eigenvector.
 #' @param las A \code{LAS} object.
 #' @param k Number of nearest neighbors for local PCA.

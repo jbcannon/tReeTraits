@@ -17,7 +17,7 @@ add_verticality(las, k = 30, name = "verticality")
 The input \code{LAS} object with a new attribute.
 }
 \description{
-Computes a verticality metric (0–1) for each point in a LAS object based on
+Computes a verticality metric (0-1) for each point in a LAS object based on
 the z-component of the dominant local PCA eigenvector.
 }
 \examples{
