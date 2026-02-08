@@ -18,3 +18,13 @@ This function labels all points with $Z > `crown_base_height`$
 and returns a labled LAS. If `crown_base_height` is not specified, it
 is estimated with [get_crown_base()] using default parameters.
 }
+\examples{
+library(lidR)
+las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+las = clean_las(las)
+las = segment_crown(las)
+\dontrun{
+#Plot with color based on crown
+plot(las, color='Crown')
+}
+}

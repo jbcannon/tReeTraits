@@ -23,8 +23,9 @@ the diameter. Both of these can be used in mass-volume equations
 as needed.
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
-volume = qsm_volume(qsm)
+volume = qsm_volume_distribution(qsm)
 print(volume)
+plot(volume~ht_m, data=volume, type='l', xlab='height (m)', ylab='Volume (m3)')
 }

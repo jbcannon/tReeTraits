@@ -18,7 +18,7 @@ calculates their attachment points (Z) to the trunk, and then
 returns the distances betweent the branches
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 inodes = internode_distances(qsm)
 print(inodes)

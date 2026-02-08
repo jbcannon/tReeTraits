@@ -39,7 +39,7 @@ The function groups QSM cylinders into segments of `segment_size` up to
 ends.
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
-fit_taper(qsm, dbh = 13.8)
+fit_taper_Kozak(qsm, dbh = 13.8)
 }

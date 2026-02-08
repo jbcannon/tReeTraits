@@ -17,8 +17,7 @@ For center of mass, assumes constant density
 within segments.
 }
 \examples{
-# example code
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
-print(get_center_of_mass)
+print(get_center_of_mass(qsm))
 }

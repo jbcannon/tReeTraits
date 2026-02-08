@@ -8,11 +8,12 @@ get_crown_volume_alpha(las, resolution = 0.1, alpha = 0.5)
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing
-a tree. Crowns must be segmented using [segment_crown()].
-@param resolution numeric - resolution of initial voxelization to increase speed}
+a tree. Crowns must be segmented using [segment_crown()].}
+
+\item{resolution}{numeric - resolution of initial voxelization to increase speed}
 
 \item{alpha}{numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
-See [ITSMe::alpha_volume_pc()].}
+See [alphashape3d::ashape3d].}
 }
 \description{
 This function volume of a `LAS` object by thinning to a resolution specified
@@ -20,12 +21,12 @@ by `resolution`, and estimating volume by fitting a alpha shape volume.
 Crowns must be segmented using [segment_crown()].
 }
 \examples{
-las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 cbh = get_crown_base(las, threshold=0.25, sustain=2)
 las = segment_crown(las, cbh)
 get_crown_volume_voxel(las)
 get_crown_volume_alpha(las)
-st_area(convex_hull_2D(las)) #profile area, convex hull
-st_area(voxel_hull_2D(las)) #profile area, voxel hull
+sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 get_lacunarity(las)
 }

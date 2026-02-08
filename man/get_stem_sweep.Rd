@@ -22,7 +22,7 @@ idealized vector. It resturns sweep from each QSM segment so that
 summary statistics can be computed by the user. See also `get_stem_deflection()`
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 print(get_center_of_mass(qsm))
 print(get_com_offset(qsm))

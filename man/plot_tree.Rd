@@ -22,7 +22,7 @@ segmentations.
 }
 \examples{
 # example code
-las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las = clean_las(las)
 plot_tree(las)
 }

@@ -40,7 +40,7 @@ Recommended values of `FUN` are:
  FUN = function(x) 3*(mean(x) - median(x)) / sd(x)
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 branch_distribution = branch_size_distribution(qsm, plot=TRUE)
 print(branch_distribution)

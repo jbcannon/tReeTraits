@@ -18,7 +18,7 @@ computes a vector between them, and returns the devation of that angle
 from directly vertical.
 }
 \examples{
-qsm_file = system.file("extdata", "tree_0723_qsm.mat", package='tReeTraits')
+qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 get_stem_tilt(qsm)
 }

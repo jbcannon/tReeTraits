@@ -1,28 +1,31 @@
 Package: tReeTraits
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
+Title: Calculate Tree Traits from Terrestrial Lidar
+Version: 0.1.2
 Author: Jeffery B. Cannon (jeffery.cannon@jonesctr.org)
-Maintainer: effery B. Cannon <jeffery.cannon@jonesctr.org>
+Maintainer: Jeffery B. Cannon <jeffery.cannon@jonesctr.org>
 Description: This package integrates several functions for measuring tree architecture from Terrestrial lidar data, including tree properties, crown properties, and tree architecture from a QSM. 
-License: GPL-3
+License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
   data.table,
   lidR,
-  ITSMe,
-  R.matlab,
-  TreeLS,
-  aRchi,
   dplyr,
   ggplot2,
   ggpubr,
-  magrittr,
-  readtext,
   recexcavAAR,
   sf,
   spanner,
   terra,
-  tibble
+  tibble,
+  reticulate,
+  CrownScorchTLS,
+  FNN,
+  alphashape3d,
+  ggplotify,
+  rgl,
+  stats,
+  stringr,
+  readr

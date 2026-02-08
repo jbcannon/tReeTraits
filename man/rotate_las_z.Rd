@@ -18,7 +18,7 @@ Rotate `LAS` object about the `Z` axis for specified angle.
 \examples{
 library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
-plot(las)
-las = rotate_las_z(las, 90)
-plot(las)
+las_rotated = rotate_las_z(las, 90)
+\dontrun{plot(las)
+plot(las_rotated)}
 }

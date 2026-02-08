@@ -36,3 +36,13 @@ into segments of height `segment_height`. The function estimates
 segments exceed a threshold specified by `threshold` which must be exceeded
 `sustain` times.
 }
+\examples{
+# example code
+library(lidR)
+las = readLAS(system.file("extdata", "tree_0744.laz", package = "tReeTraits"))
+las = clean_las(las)
+
+# Estimate crown base height
+cbh = get_crown_base(las)
+print(cbh)
+}

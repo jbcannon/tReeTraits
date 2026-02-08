@@ -15,7 +15,7 @@
 #' @importFrom stats quantile
 #' @export
 get_height = function(las, quantiles = c(0, 1)) {
-  stopifnot(class(las) == 'LAS')
+  stopifnot(inherits(las, "LAS"))
   stopifnot(length(quantiles) == 2)
   stopifnot(quantiles >= 0 & quantiles <= 1)
   stopifnot(quantiles[1]<quantiles[2])
@@ -68,10 +68,8 @@ get_width = function(las, quantiles = c(0.001, 0.999)) {
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = clean_las(las)
 #' print(get_dbh(las))
-#' @importFrom lidR filter_poi add_lasattribute
-#' @importFrom spanner eigen_metrics
-#' @importFrom TreeLS shapeFit
-#' @importFrom magrittr `%>%`
+#' @importFrom lidR decimate_points random_per_voxel point_eigenvalues
+#' @importFrom spanner cylinderFit
 #' @export
 get_dbh = function(las, intensity_threshold=41000,
                    select_n = 10, verticality_threshold=0.9) {
@@ -83,14 +81,16 @@ get_dbh = function(las, intensity_threshold=41000,
   }
   stopifnot(!is.null(verticality_threshold))
   stopifnot(verticality_threshold >= 0 & verticality_threshold < 1)
-  bole = lidR::filter_poi(las, Intensity > intensity_threshold & Z < 3)
+  bole = lidR::filter_poi(las, .data$Intensity > intensity_threshold & .data$Z < 3)
   #filter to speed up processing.
   bole = lidR::decimate_points(bole, lidR::random_per_voxel(res=0.025))
-  eigen = spanner::eigen_metrics(bole)$Verticality
-  bole = lidR::add_lasattribute(bole, eigen, 'Verticality', 'Verticality')
-  bole = lidR::filter_poi(bole, Z> 1 & Z < 2 & Verticality > verticality_threshold)
+
+  lidR::point_eigenvalues(bole, r = 0.1)
+  bole = add_verticality(bole)
+  bole = lidR::filter_poi(bole, .data$Z> 1 & .data$Z < 2 & .data$verticality > verticality_threshold)
   cyl = spanner::cylinderFit(bole, method='ransac', n = select_n, n_best = 3)
-  dbh = cyl$radius*2
+  radius = cyl$radius
+  dbh = radius*2
   return(c(dbh = as.numeric(dbh)))
 }
 
@@ -114,6 +114,15 @@ get_dbh = function(las, intensity_threshold=41000,
 #' Values in the interval approaching 0 (e.g., 0.001) are recommended to
 #' trim random noise
 #' @importFrom stats quantile
+#' @examples
+#' # example code
+#' library(lidR)
+#' las = readLAS(system.file("extdata", "tree_0744.laz", package = "tReeTraits"))
+#' las = clean_las(las)
+#'
+#' # Estimate crown base height
+#' cbh = get_crown_base(las)
+#' print(cbh)
 #' @export
 get_crown_base = function(las, threshold = 0.5, sustain = 2,
                            segment_height = 0.25, quantile = 0.01) {
@@ -147,7 +156,7 @@ get_crown_base = function(las, threshold = 0.5, sustain = 2,
 #' trim random noise
 #' @param angle numeric - angle at which to rotate the point cloud prior
 #' to estimating area. Useful in a loop if quantifying mulitple angles
-#' @importFrom dplyr filter
+#' @importFrom dplyr filter mutate
 #' @importFrom stats quantile
 #' @importFrom tibble tibble
 get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle = 0) {
@@ -155,7 +164,7 @@ get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle
   heights = quantile(las$Z, probs = c(quantile, 1-quantile))
   myfun = function(slice_min) {
     slice_max = slice_min + segment_height
-    slice = dplyr::filter(pc, Z > slice_min & Z <= slice_max)
+    slice = dplyr::filter(pc, .data$Z > slice_min & .data$Z <= slice_max)
     width = diff(stats::quantile(slice$X, probs = c(quantile,1-quantile)))
     area = width * segment_height
     return(tibble::tibble(bottom = slice_min, top = slice_max, width = width, area = area))
@@ -176,6 +185,15 @@ get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle
 #' @param crown_base_height numeric - height of crown base for segmentation.
 #' `NULL`, it is estimated with [get_crown_base()] using default parameters.
 #' @importFrom lidR add_lasattribute
+#' @examples
+#' library(lidR)
+#' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = clean_las(las)
+#' las = segment_crown(las)
+#' \dontrun{
+#' #Plot with color based on crown
+#' plot(las, color='Crown')
+#' }
 #' @export
 segment_crown = function(las, crown_base_height = NULL) {
   if(is.null(crown_base_height)) {
@@ -199,18 +217,18 @@ segment_crown = function(las, crown_base_height = NULL) {
 #' @importFrom lidR voxelize_points filter_poi
 #' @export
 #' @examples
-#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = clean_las(las)
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
-#' st_area(convex_hull_2D(las)) #profile area, convex hull
-#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+#' sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 #' get_lacunarity(las)
 get_crown_volume_voxel = function(las, resolution = 0.1) {
   if(!'Crown' %in% colnames(las@data)) stop('las does not contain column called `Crown` use `segment_crown()`')
-  crown = lidR::filter_poi(las, Crown == 1)
+  crown = lidR::filter_poi(las, .data$Crown == 1)
   vox = lidR::voxelize_points(crown, res = resolution)
   volume = nrow(vox) * resolution^3
   return(c(crown_volume_vox = volume))
@@ -224,29 +242,32 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' Crowns must be segmented using [segment_crown()].
 #' @param las `LAS` object from `lidR` package representing
 #'  a tree. Crowns must be segmented using [segment_crown()].
-#'  @param resolution numeric - resolution of initial voxelization to increase speed
+#' @param resolution numeric - resolution of initial voxelization to increase speed
 #' @param alpha numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
-#' See [ITSMe::alpha_volume_pc()].
+#' See [alphashape3d::ashape3d].
 #' @importFrom lidR voxelize_points filter_poi
-#' @importFrom ITSMe alpha_volume_pc
+#' @importFrom alphashape3d ashape3d volume_ashape3d
 #' @export
 #' @examples
-#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
-#' st_area(convex_hull_2D(las)) #profile area, convex hull
-#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+#' sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 #' get_lacunarity(las)
 get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
   }
-  crown = lidR::filter_poi(las, Crown == 1)
+  las = recenter_las(las, height=NULL)
+  crown = lidR::filter_poi(las, .data$Crown == 1)
   vox = lidR::voxelize_points(crown, res = resolution)
-  vol = suppressWarnings(ITSMe::alpha_volume_pc(vox@data[, c('X','Y','Z')], alpha=alpha))
-  return(c(crown_volume_alpha = vol$av))
+  vox = vox@data[, c('X','Y','Z')]
+  aShape = suppressWarnings(alphashape3d::ashape3d(as.matrix(vox), alpha = alpha, pert = TRUE))
+  vol <- alphashape3d::volume_ashape3d(aShape)
+  return(c(crown_volume_alpha = vol))
 }
 
 
@@ -261,20 +282,21 @@ get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
 #' @importFrom sf st_as_sf st_convex_hull st_union
 #' @export
 #' @examples
-#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = clean_las(las)
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
-#' st_area(convex_hull_2D(las)) #profile area, convex hull
-#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+#' sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 #' get_lacunarity(las)
 convex_hull_2D = function(las, angle = 0) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
   }
   #vertical projection on X-Z plane
-  las = lidR::filter_poi(las, Crown == 1)
+  las = lidR::filter_poi(las, .data$Crown == 1)
   las = rotate_las_z(las, angle)
   las = las@data[,c('X', 'Z')]
   las = sf::st_as_sf(las, coords = c('X', 'Z'))
@@ -295,23 +317,25 @@ convex_hull_2D = function(las, angle = 0) {
 #' @importFrom lidR filter_poi voxelize_points rasterize_density
 #' @importFrom sf st_as_sf st_as_sf st_crs
 #' @importFrom terra as.polygons
+#' @importFrom data.table :=
 #' @export
 #' @examples
-#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = clean_las(las)
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
-#' st_area(convex_hull_2D(las)) #profile area, convex hull
-#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+#' sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 #' get_lacunarity(las)
 voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
   }
-  crown = filter_poi(las, Crown == 1)
+  crown = lidR::filter_poi(las, .data$Crown == 1)
   if(angle != 0) las = rotate_las_z(crown, angle)
-  crown@data[, Y := crown$Z]
+  crown@data[, Y := Z]
   flat_las = lidR::voxelize_points(crown, resolution)
   proj = lidR::rasterize_density(flat_las, res = resolution)
   proj = proj > 0
@@ -331,22 +355,25 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
 #' the CROWN of a tree. Crowns must be segmented using [segment_crown()].
 #' @param res numeric - resolution of voxelization
 #' @param angle numeric - in degrees, rotation angle about Z axis.
+#' @importFrom sf st_area
+#' @importFrom lidR filter_poi
+#' @export
 #' @examples
-#' las = lidR::readLAS(system.file("extdata", "tree_0723.las", package="tReeTraits"))
+#' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
-#' st_area(convex_hull_2D(las)) #profile area, convex hull
-#' st_area(voxel_hull_2D(las)) #profile area, voxel hull
+#' sf::st_area(convex_hull_2D(las)) #profile area, convex hull
+#' sf::st_area(voxel_hull_2D(las)) #profile area, voxel hull
 #' get_lacunarity(las)
 get_lacunarity = function(las, res = 0.1, angle = 0) {
   # Make a voxel hull, and get the ratio of its area relative to same
   # hull with holes filled.
   if(!'Crown' %in% colnames(las@data)) stop('las does not contain column called `Crown` use `segment_crown()`')
-  las = lidR::filter_poi(las, Crown == 1)
+  las = lidR::filter_poi(las, .data$Crown == 1)
   if(angle != 0) las = rotate_las_z(las, angle)
-  voxel_hull_area = sf::st_area(voxel_hull_2D(las, res = res))
+  voxel_hull_area = sf::st_area(voxel_hull_2D(las, resolution = res))
   convex_hull_area = sf::st_area(convex_hull_2D(las))
   lacunarity = 1 - voxel_hull_area/convex_hull_area
   return(lacunarity)
@@ -369,14 +396,53 @@ get_lacunarity = function(las, res = 0.1, angle = 0) {
 #' @param angle numeric - angle at which to rotate the point cloud prior
 #'
 #' to estimating area. Useful in a loop if quantifying mulitple angles
-#' @importFrom dplyr filter
+#' @importFrom dplyr filter mutate
+#' @examples
+#' library(lidR)
+#' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = clean_las(las)
+#' las = segment_crown(las)
+#' print(get_crown_lever_arm(las))
+#' @export
 get_crown_lever_arm = function(las, segment_height=0.25, quantile = c(0.001), angle=0) {
   if(!'Crown' %in% colnames(las@data)) {
     stop('las does not contain column called `Crown` use `segment_crown()`')
   }
-  las = lidR::filter_poi(las, Crown == 1)
+  las = lidR::filter_poi(las, .data$Crown == 1)
   profile = get_area_profile(las, segment_height=segment_height, quantile=quantile, angle=angle)
-  profile = dplyr::mutate(profile, midpt = (bottom+top)/2, lever = area*midpt)
+  profile = dplyr::mutate(profile, midpt = (.data$bottom+.data$top)/2, lever = .data$area*.data$midpt)
   lever = sum(profile$lever, na.rm=TRUE)
   return(lever)
 }
+
+#' Add point-wise verticality from local PCA
+#'
+#' Computes a verticality metric (0–1) for each point in a LAS object based on
+#' the z-component of the dominant local PCA eigenvector.
+#' @param las A \code{LAS} object.
+#' @param k Number of nearest neighbors for local PCA.
+#' @param name Name of the attribute to store.
+#' @importFrom FNN  get.knnx
+#' @return The input \code{LAS} object with a new attribute.
+#' @importFrom FNN get.knnx
+#' @importFrom stats cov
+#' @examples
+#' \dontrun{
+#' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = add_verticality(las, k = 20)
+#' head(las@data)
+#' }
+#' @export
+add_verticality <- function(las, k = 30, name = "verticality") {
+
+  xyz <- as.matrix(las@data[, c("X", "Y", "Z")])
+  nn  <- FNN::get.knnx(xyz, xyz, k)$nn.index
+
+  vert <- vapply(seq_len(nrow(xyz)), function(i) {
+    pts <- xyz[nn[i, ], ]
+    abs(eigen(stats::cov(pts), symmetric = TRUE)$vectors[3, 1])
+  }, numeric(1))
+
+  las = lidR::add_lasattribute(las, vert, name, name)
+}
+
