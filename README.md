@@ -23,22 +23,22 @@ This package depends on CRAN and GitHub packages:
 ```{r}
 install.packages("lidR")
 install.packages("remotes")  # For GitHub installation
-remotes::install_github("bi0m3trics/spanner")
-<<<<<<< HEAD
-remotes::install_github("lmterryn/ITSMe")
-remotes::install_github("tiagodc/TreeLS")
-=======
->>>>>>> cran-integration
 
 # Install tReeTraits itself
-remotes::install_github("jbcannon/tReeTraits")
+install.packages("tReetraits") #latest CRAN release
+devtools::install_github("jbcannon/tReeTraits") #development version
 ```
 
 ## 🔧 Requirements (for QSM features)
 
-To use the TreeQSM functionality, you must have a conda environment named `pytlidar`, running **Python 3.11** with the **PyTLidar** package installed. This can be done entirely from R using **reticulate**. You will be prompted to install the environment once (per machine). Once installed the environment is automatically detected when the package is loaded.
-
 ### PyTLidar Setup (Run once per machine)
+
+To use the TreeQSM functionality, you must have a conda environment named 
+`r-reticulate-pytlidar`, running **Python 3.11** with the **PyTLidar** 
+package and its dependencies installed. 
+This is handled automatically by the `setup_pytlidar()` function which must
+be run once on each new machine.  Once installed the environment 
+is automatically detected when the package is loaded.
 
 To enable TreeQSM functionality, run:
 
@@ -46,16 +46,14 @@ To enable TreeQSM functionality, run:
 setup_pytlidar()
 ```
 
-This installs conda binary if missing, creates a dedicated Python environment, and installs required Python dependencies.
+This installs miniconda if needed, creates a dedicated Python environment, 
+and installs PyTLidar and required dependencies.
 
 ### Routine usage
 
-The environment is automatically loaded with the package. If the environment is missing, you will be prompted to run `setup_pytlidar()`. QSM functions are now enabled.
-
-```{r}
-qsm = run_treeqsm("tree.laz")
-plot_qsm3d(qsm)
-```
+The environment is automatically checked with each call to the `run_treeqsm`
+function. If the environment is missing, you will be prompted to run
+`setup_pytlidar()`.
 
 ## 🚀 Getting Started
 
@@ -67,10 +65,9 @@ library(tReeTraits)
 library(lidR)
 
 # load example data
-las <- readLAS(system.file("extdata", "tree_0744.laz", package = "tReeTraits"))
-
-# or load your own data
-#las <- readLAS("C:/path/to/data/myfile.las")
+las_filename = system.file("extdata", "tree_0744.laz", package = "tReeTraits")
+#las_filename = "C:/path/to/data/myfile.las" #or your own data
+las <- readLAS(las_filename)
 
 # Clean and preprocess: recenter, normalize, remove understory vegetation
 las_clean <- clean_las(las, bole_height = 2)
@@ -115,22 +112,29 @@ Illustration of convex hull (dashed line) and voxel hull (green feature) from ex
 
 This example shows how to generate a Quantitative Structure Model (QSM) from a single-tree point cloud using TreeQSM via `tReeTraits`.
 
+#### Step 0. Ensure PyTLidar is available
+
 ```{r}
 library(tReeTraits)
 
-# ---- Step 0. Ensure PyTLidar is available ----
 # Creates and manages an isolated Python environment if needed
 setup_pytlidar()
 # Note that you may need to Restart R to complete installation
 # Only need to run once per machine
+```
+#### Step 1. Define input file
 
-# ---- Step 1. Define input file  ----
+```{r}
 # Input file
 file <- system.file("extdata", "tree_0744.laz", package = "tReeTraits")
 tree_id <- tools::file_path_sans_ext(basename(file))
+```
+#### Step 2. Run TreeQSM
 
-# ---- Step 2. Run TreeQSM ----
-# Multiple parameter combinations can be supplied; TreeQSM optimizes across them
+Multiple parameter combinations can be supplied. 
+TreeQSM optimizes across them
+
+```{r}
 qsm_result <- run_treeqsm(
   file = file,
   intensity_threshold = 40000,
@@ -140,21 +144,30 @@ qsm_result <- run_treeqsm(
   patch_diam2max = c(0.12, 0.14),
   verbose = TRUE
 )
+```
 
-# ---- Step 3. Save results ----
+####  Step 3. View results 
+
+```{r}
+# View the parameters of the best model
+params = qsm_result$qsm_pars
+print(params)
+
+# Plot the qsm in 2d or 3d (Note 3d drawing is slow)
+qsm = qsm_result$qsm
+plot_qsm2d(qsm, scale=40)
+#plot_qsm3d(qsm)
+```
+
+####  Step 4. Save results 
+
+```{r}
 write_qsm(
   qsm_result,
   name = tree_id,
   output_dir = tempdir()
 )
 
-# ---- Step 4. Reload QSM ----
-qsm_path <- file.path(tempdir(), paste0(tree_id, "_qsm.txt"))
-qsm <- load_qsm(qsm_path)
-
-# ---- Step 5. Visualize ----
-plot_qsm2d(qsm, scale = 50)
-plot_qsm3d(qsm)
 ```
 
 ### 📐 Tree Geometry traits from QSM
