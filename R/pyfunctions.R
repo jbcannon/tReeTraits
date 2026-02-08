@@ -154,13 +154,9 @@ inputs <- inputs_list[[1]]  # get first dict
     as.data.frame()
   fits$distance <- rowMeans(fits[, optimizing_metrics, drop = FALSE], na.rm = TRUE)
   fits = dplyr::arrange(fits, distance)
-  parameters = fits %>% slice(1) %>%
+  parameters = fits |> dplyr::slice(1) |>
     dplyr::select(starts_with("PatchDiam"), distance, dplyr::all_of(optimizing_metrics))
 
-  #grab the best qsm and read it in.
-  if (!file.exists(best_qsm)) {
-    stop("Best QSM file not found: ", best_qsm)
-  }
   best_qsm = file.path(output_dir, 'results', paste0('cylinder_', fits$file[1], '.txt'))
   qsm <- .read_qsm_raw(normalizePath(best_qsm))
   list(qsm_pars = parameters, qsm = qsm)

@@ -17,10 +17,16 @@ setup_pytlidar <- function() {
   required_modules <- c("torch", "numpy==2.2", "robpy", "PyTLidar")
 
   # 1. Ensure conda exists
-  if (is.null(reticulate::conda_binary())) {
+  conda_exists <- tryCatch({
+    reticulate::conda_binary()
+    TRUE
+  }, error = function(e) {
+    FALSE
+  })
+  if (!conda_exists) {
     message("[INFO] No conda detected. Installing r-miniconda...")
     reticulate::install_miniconda()
-    warning("[ACTION REQUIRED] Restart R and re-run setup_pytlidar()")
+    warning("[ACTION REQUIRED] Terminate R and re-run setup_pytlidar()")
     options("pytlidar-activated" = FALSE)
     return(invisible(FALSE))
   }
@@ -36,9 +42,11 @@ setup_pytlidar <- function() {
   reticulate::use_condaenv(envname, required = TRUE)
 
   # 4. Install missing Python modules
-  installed <- vapply(required_modules, reticulate::py_module_available, logical(1))
+  # Check which are installed
+  module_names <- sub("==.*$", "", required_modules) #remove version info
+  installed <- vapply(module_names, reticulate::py_module_available, logical(1))
   if (!all(installed)) {
-    missing <- names(installed[!installed])
+    missing <- required_modules[!installed]  # use full spec with version for installation
     message("[INFO] Installing missing Python packages: ", paste(missing, collapse = ", "))
     reticulate::py_install(missing, envname = envname, method = "auto", pip = TRUE)
   } else {
