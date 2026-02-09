@@ -35,12 +35,10 @@ For large models, rendering may be slow because each cylinder is drawn as
 a separate mesh. Consider downsampling or filtering before plotting.
 }
 \examples{
-\dontrun{
 # Load QSM output (example path)
-qsm <- read_qsm_PyTLidar("inst/extdata/tree_0129/cylinder.txt")
-
+qsm_file = system.file('extdata',"tree_0744_qsm.txt", package='tReeTraits')
+qsm = load_qsm(qsm_file)
 # Plot with real radii
-plot_qsm_cylinders(qsm, color = "forestgreen", alpha = 0.6)
-}
-
+\dontrun{
+plot_qsm3d(qsm, color = "forestgreen", alpha = 0.6)}
 }

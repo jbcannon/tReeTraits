@@ -23,9 +23,7 @@ The function calls `fit_taper_Kozak()` with `plot = FALSE` and returns the plot 
 This allows quick visualization of the taper without modifying the underlying QSM.
 }
 \examples{
-\dontrun{
-qsm <- run_treeqsm("tree_0129.laz")
+path = system.file('extdata', 'tree_0744_qsm.txt', package='tReeTraits')
+qsm = load_qsm(path)
 taper_diagnostic_plot(qsm, dbh = 0.25)
-}
-
 }

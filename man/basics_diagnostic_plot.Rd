@@ -31,9 +31,13 @@ The function first thins the point cloud using `lidR::decimate_points()` to impr
 Then it overlays key measurement lines and markers for height, crown width, DBH, and crown base height.
 }
 \examples{
-\dontrun{
-las <- lidR::readLAS("inst/extdata/tree_0129.laz")
-basics_diagnostic_plot(las, height = 15, cbh = 5, crown_width = 4, dbh = 0.35)
-}
-
+library(lidR)
+path = system.file('extdata', 'tree_0744.laz', package='tReeTraits')
+las = clean_las(readLAS(path))
+ht = get_height(las)
+dbh = get_dbh(las)
+wid = get_width(las)[1]
+cbh = get_crown_base(las)
+basics_diagnostic_plot(las, height = ht, cbh = cbh,
+                     crown_width = wid, dbh = dbh)
 }

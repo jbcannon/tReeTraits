@@ -21,9 +21,7 @@ The function calls `branch_size_distribution()` with `plot = FALSE` to compute b
 at midpoints of diameter bins, then generates a bar plot showing total volume per diameter bin.
 }
 \examples{
-\dontrun{
-qsm <- run_treeqsm("tree_0129.laz")
+qsm_file = system.file('extdata',"tree_0744_qsm.txt", package='tReeTraits')
+qsm = load_qsm(qsm_file)
 branch_distribution_plot(qsm)
-}
-
 }

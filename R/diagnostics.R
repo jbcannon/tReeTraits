@@ -95,11 +95,15 @@ plot_qsm2d = function(qsm, scale = 150, rotation=TRUE) {
 #' Then it overlays key measurement lines and markers for height, crown width, DBH, and crown base height.
 #'
 #' @examples
-#' \dontrun{
-#' las <- lidR::readLAS("inst/extdata/tree_0129.laz")
-#' basics_diagnostic_plot(las, height = 15, cbh = 5, crown_width = 4, dbh = 0.35)
-#' }
-#'
+#' library(lidR)
+#' path = system.file('extdata', 'tree_0744.laz', package='tReeTraits')
+#' las = clean_las(readLAS(path))
+#' ht = get_height(las)
+#' dbh = get_dbh(las)
+#' wid = get_width(las)[1]
+#' cbh = get_crown_base(las)
+#' basics_diagnostic_plot(las, height = ht, cbh = cbh,
+#'                      crown_width = wid, dbh = dbh)
 #' @export
 basics_diagnostic_plot = function(las, height, cbh, crown_width, dbh, res=0.1) {
   las_thin = lidR::decimate_points(las, lidR::random_per_voxel(res=res))
@@ -139,12 +143,11 @@ basics_diagnostic_plot = function(las, height, cbh, crown_width, dbh, res=0.1) {
 #' overlays the voxel hull in color and the convex hull as a dashed outline.
 #'
 #' @examples
-#' \dontrun{
-#' las <- readLAS("tree.laz")
+#' library(lidR)
+#' file = system.file('extdata', file='tree_0744.laz', package='tReeTraits')
+#' las <- readLAS(file)
 #' las <- segment_crown(las)  # adds `Crown` column
 #' hull_diagnostic_plot(las)
-#' }
-#'
 #' @export
 hull_diagnostic_plot <- function(las, res = 0.1) {
   if (!'Crown' %in% colnames(las@data)) {
@@ -177,11 +180,9 @@ hull_diagnostic_plot <- function(las, res = 0.1) {
 #' This allows quick visualization of the taper without modifying the underlying QSM.
 #'
 #' @examples
-#' \dontrun{
-#' qsm <- run_treeqsm("tree_0129.laz")
+#' path = system.file('extdata', 'tree_0744_qsm.txt', package='tReeTraits')
+#' qsm = load_qsm(path)
 #' taper_diagnostic_plot(qsm, dbh = 0.25)
-#' }
-#'
 #' @export
 taper_diagnostic_plot <- function(qsm, dbh) {
   fit_taper_Kozak(qsm, dbh, plot = FALSE)$plot
@@ -201,11 +202,9 @@ taper_diagnostic_plot <- function(qsm, dbh) {
 #' at midpoints of diameter bins, then generates a bar plot showing total volume per diameter bin.
 #' @importFrom ggplot2 ggplot aes geom_col theme_bw theme element_blank labs
 #' @examples
-#' \dontrun{
-#' qsm <- run_treeqsm("tree_0129.laz")
+#' qsm_file = system.file('extdata',"tree_0744_qsm.txt", package='tReeTraits')
+#' qsm = load_qsm(qsm_file)
 #' branch_distribution_plot(qsm)
-#' }
-#'
 #' @export
 branch_distribution_plot <- function(qsm) {
   branches <- branch_size_distribution(qsm, plot = FALSE)
@@ -233,6 +232,8 @@ branch_distribution_plot <- function(qsm) {
 #' @importFrom ggpubr ggarrange
 #' @importFrom ggplotify as.ggplot
 #' @examples
+#' \dontrun{
+#' library(lidR)
 #' las_file = system.file("extdata", "tree_0744.laz", package="tReeTraits")
 #' las = lidR::readLAS(las_file)
 #' las = clean_las(las, bole_height=3)
@@ -244,6 +245,7 @@ branch_distribution_plot <- function(qsm) {
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
 #' full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
+#' }
 #' @export
 full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1) {
   r = plot_tree(las, plot=FALSE)
@@ -284,14 +286,12 @@ full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1
 #'   Returns \code{NULL} invisibly.
 #' @importFrom rgl open3d bg3d aspect3d cylinder3d shade3d axes3d title3d
 #' @examples
-#' \dontrun{
 #' # Load QSM output (example path)
-#' qsm <- read_qsm_PyTLidar("inst/extdata/tree_0129/cylinder.txt")
-#'
+#' qsm_file = system.file('extdata',"tree_0744_qsm.txt", package='tReeTraits')
+#' qsm = load_qsm(qsm_file)
 #' # Plot with real radii
-#' plot_qsm_cylinders(qsm, color = "forestgreen", alpha = 0.6)
-#' }
-#'
+#'\dontrun{
+#' plot_qsm3d(qsm, color = "forestgreen", alpha = 0.6)}
 #' @importFrom rgl open3d bg3d aspect3d cylinder3d shade3d title3d
 #' @export
 plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {

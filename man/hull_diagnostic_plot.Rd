@@ -24,10 +24,9 @@ computes both the 2D convex hull and a voxelized 2D hull. The resulting plot
 overlays the voxel hull in color and the convex hull as a dashed outline.
 }
 \examples{
-\dontrun{
-las <- readLAS("tree.laz")
+library(lidR)
+file = system.file('extdata', file='tree_0744.laz', package='tReeTraits')
+las <- readLAS(file)
 las <- segment_crown(las)  # adds `Crown` column
 hull_diagnostic_plot(las)
-}
-
 }
