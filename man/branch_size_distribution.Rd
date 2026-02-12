@@ -16,6 +16,15 @@ distributed across 1 cm bins.}
 \item{plot}{boolean -- indicates whether the branch diameter distribution
 should be plotted as a histogram.}
 }
+\value{
+A tibble summarizing branch volume by diameter class with columns:
+\describe{
+  \item{diameter_cm}{Factor indicating the diameter class (cm).}
+  \item{midpoint}{Numeric midpoint (cm) of each diameter class.}
+  \item{volume_mL}{Total branch volume (mL) within the class.}
+}
+Returns `NA` if fewer than two branch cylinders are present.
+}
 \description{
 This function outputs the volume (in mL) distribution of branches across
 different branch diameter classes (in cm). Outputs a table that can be used

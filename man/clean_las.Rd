@@ -18,6 +18,10 @@ can be considered vegetation.}
 ground points may not be identifiable with common algorithms if
 ground points are removed during segmentation#'}
 }
+\value{
+A cleaned `LAS` object with vegetation and noise removed,
+normalized and recentered.
+}
 \description{
 Function to normalize, remove noise, remove vegetation, and recenter `LAS`
 representing segmented tree. Vegetation cleaning is accomplished by
@@ -28,6 +32,8 @@ below the `z.threshold`.
 library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las_cleaned = clean_las(las)
-\dontrun{plot(las)
-plot(las_cleaned)}
+\donttest{
+plot(las)
+plot(las_cleaned)
+}
 }

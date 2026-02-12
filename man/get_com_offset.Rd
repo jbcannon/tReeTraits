@@ -9,6 +9,10 @@ get_com_offset(qsm)
 \arguments{
 \item{qsm}{a QSM loaded using `[load_qsm()]`.}
 }
+\value{
+A single numeric value giving the horizontal distance (m)
+between the base of the tree and the volume-weighted center of mass.
+}
 \description{
 This function extracts the horizontal distance between the base of a tree and
 the center of a tree from a QSM. The function takes the coordinate of the

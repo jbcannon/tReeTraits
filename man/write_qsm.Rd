@@ -14,7 +14,11 @@ write_qsm(qsm, name, output_dir = getwd())
 \item{output_dir}{Directory where files are written (defaults to current working directory).}
 }
 \value{
-Invisibly returns a list with file paths: \code{qsm} and \code{pars}.
+Invisibly returns a list with file paths:
+  \itemize{
+    \item \code{qsm}: Path to the QSM cylinder file.
+    \item \code{pars}: Path to the parameter summary file.
+  }
 }
 \description{
 Writes QSM cylinder data and parameter summaries to tab-delimited text files.

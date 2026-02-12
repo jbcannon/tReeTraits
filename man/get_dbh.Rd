@@ -22,6 +22,9 @@ individually segmented tree}
 \item{verticality_threshold}{numeric - filter value for Verticality threshold to remove
 horizontal branches.}
 }
+\value{
+A named numeric vector with element `dbh` (m).
+}
 \description{
 Function to extract diameter at breast height (1.37 m) from LAS object.
 Function filters LAS keeping only points with Intensity greater than

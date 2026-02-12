@@ -20,6 +20,9 @@ trim random noise}
 
 to estimating area. Useful in a loop if quantifying mulitple angles}
 }
+\value{
+A numeric value representing the crown lever arm.
+}
 \description{
 This function calculates the lever arm of canopies. The function
 #' is a simple wrapper for `get_area_profile()`. It calculates the crown area

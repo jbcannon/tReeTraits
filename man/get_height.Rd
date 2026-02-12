@@ -14,6 +14,9 @@ individually segmented tree}
 are measured. Values in the interval (0,1) are recommended to trim
 random noise.}
 }
+\value{
+A named numeric vector with element `height` (m).
+}
 \description{
 Function to extract height from LAS object. Function calculates
 difference between two specified quantiles from the `Z` attribute.

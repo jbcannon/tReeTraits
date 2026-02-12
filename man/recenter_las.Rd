@@ -15,6 +15,9 @@ Useful for considering only the tree bole, for centering.
 individually segmented tree. Set `height = NULL` to recenter
 using all points.}
 }
+\value{
+A `LAS` object with X and Y coordinates recentered to (0, 0).
+}
 \description{
 Function calculates the tree location using points below specified
 `height` and recenters on `X=0 Y=0`
@@ -28,7 +31,9 @@ hist(las$X)
 hist(las$Y)
 las = recenter_las(las)
 # view histogram of X/Y values centered on 0,0
+oldpar <- par(no.readonly = TRUE)
 par(mfrow=c(1,2))
 hist(las$X)
 hist(las$Y)
+par(oldpar)
 }

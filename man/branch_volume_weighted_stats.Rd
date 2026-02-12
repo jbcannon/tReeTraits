@@ -16,6 +16,10 @@ distributed across 1 cm bins.}
 \item{FUN}{function -- central tendency function to be weighted based on
 branch volume.}
 }
+\value{
+A numeric value representing the volume-weighted statistic
+calculated by `FUN` across branch diameter classes.
+}
 \description{
 This function calculates statistics on branch diameters weighted by the
 volume of branches of that size based on outputs from

@@ -11,6 +11,11 @@ internode_distances(qsm, min_diam = 2)
 
 \item{min_diam}{numeric - minimum diameter (in cm) to include branch}
 }
+\value{
+A numeric vector of internode distances (m) between consecutive
+primary branches that meet the diameter threshold. Returns `NA` if fewer
+than two qualifying primary branches are present.
+}
 \description{
 This function estimates the internode distance between primary branches
 from a QSM. It filters out all primary branches `branching_order == 1`

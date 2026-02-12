@@ -12,6 +12,10 @@ the CROWN of a tree. Crowns must be segmented using [segment_crown()].}
 
 \item{angle}{numeric - in degrees, rotation angle about Z axis.}
 }
+\value{
+An `sf` polygon representing the vertical convex hull
+of the crown projection.
+}
 \description{
 This function generates an `sf` object representing th vertical crown area
 of a `LAS` object based using the convex hull of a 2D vertical projection.

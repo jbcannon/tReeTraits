@@ -11,6 +11,12 @@ load_qsm(path)
 }
 \value{
 A tibble containing the QSM data.
+
+A tibble containing the QSM data with validated required columns:
+`startX`, `startY`, `startZ`, `endX`, `endY`, `endZ`,
+`cyl_ID`, `parent_ID`, `extension_ID`,
+`radius_cyl`, `length`, `volume`, and `branching_order`.
+An error is thrown if any required columns are missing.
 }
 \description{
 Reads a Quantitative Structure Model (QSM) file from disk and checks
@@ -18,7 +24,7 @@ that it includes all required columns. If any expected columns are missing,
 the function stops with an informative error message.
 }
 \examples{
-\dontrun{
-qsm <- load_qsm("path/to/qsm.txt")
-}
+qsm_path = system.file('extdata', 'tree_0744_qsm.txt', package='tReeTraits')
+qsm <- load_qsm(qsm_path)
+plot_qsm2d(qsm, scale=50)
 }

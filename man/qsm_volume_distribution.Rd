@@ -13,6 +13,16 @@ qsm_volume_distribution(qsm, terminus_diam_cm = 4, segment_size = 0.5)
 
 \item{segment_size}{numeric length of trunk segments in which to summarize volume.}
 }
+\value{
+A tibble describing vertical volume distribution with columns:
+\describe{
+  \item{section}{Tree component ("trunk", "terminus", or "branches").}
+  \item{diam_cm}{Diameter (cm) of the segment or branch.}
+  \item{ht_m}{Height (m) of the segment midpoint or branch attachment.}
+  \item{volume}{Total volume (m^3) of the segment (trunk and terminus only;
+  `NA` for branches).}
+}
+}
 \description{
 This function estimates tree volume and its vertical distribution
 from a QSM. The function separates the QSM into (1) trunk sections

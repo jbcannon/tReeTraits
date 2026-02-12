@@ -38,6 +38,12 @@ minimize when selecting the best QSM fit. See Details}
 }
 \value{
 A list with elements:
+  \itemize{
+    \item \code{qsm_pars}: Data frame of selected patch parameters and fit metrics.
+    \item \code{qsm}: Data frame of cylinder-level QSM output.
+  }
+
+A list with elements:
   \describe{
     \item{qsm_pars}{Data frame of patch parameters and fit metrics.}
     \item{qsm}{Data frame of cylinder-level QSM output.}

@@ -14,6 +14,13 @@ considered trunk}
 
 \item{plot}{boolean -- indicates whether graph of sweep should be plotted.}
 }
+\value{
+A data frame with columns:
+\describe{
+  \item{Height}{Height (m) of each trunk segment midpoint.}
+  \item{sweep}{Perpendicular deviation (m) from the idealized straight stem line.}
+}
+}
 \description{
 This function calculates tree sweep from a QSM. Starting with an idealized
 vector of a straight tree (straight line from top to bottom QSM segment)

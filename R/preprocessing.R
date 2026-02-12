@@ -16,6 +16,7 @@
 #' las = normalize_las(las)
 #' # view histogram of Z values now ranging from  0 to 11 m
 #' hist(las$Z)
+#' @return A `LAS` object with Z values normalized to ground level.
 #' @importFrom lidR las_update filter_poi
 #' @importFrom stats quantile
 #' @importFrom data.table :=
@@ -43,6 +44,7 @@ normalize_las = function(las, quantile=c(0.001)) {
 #' Useful for considering only the tree bole, for centering.
 #' individually segmented tree. Set `height = NULL` to recenter
 #' using all points.
+#' @return A `LAS` object with X and Y coordinates recentered to (0, 0).
 #' @examples
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -52,9 +54,11 @@ normalize_las = function(las, quantile=c(0.001)) {
 #' hist(las$Y)
 #' las = recenter_las(las)
 #' # view histogram of X/Y values centered on 0,0
+#' oldpar <- par(no.readonly = TRUE)
 #' par(mfrow=c(1,2))
 #' hist(las$X)
 #' hist(las$Y)
+#' par(oldpar)
 #' @importFrom lidR las_update
 #' @importFrom data.table :=
 #' @export
@@ -91,12 +95,16 @@ recenter_las = function(las, height = 1) {
 #' @param quantile See `normalize_las`. Z quantile at which grown level is specified since
 #' ground points may not be identifiable with common algorithms if
 #' ground points are removed during segmentation#'
+#' @return A cleaned `LAS` object with vegetation and noise removed,
+#' normalized and recentered.
 #' @examples
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las_cleaned = clean_las(las)
-#' \dontrun{plot(las)
-#' plot(las_cleaned)}
+#' \donttest{
+#' plot(las)
+#' plot(las_cleaned)
+#' }
 #' @importFrom lidR filter_duplicates classify_noise ivf LASNOISE filter_poi
 #' @importFrom CrownScorchTLS stemPoints
 #' @export
@@ -123,8 +131,11 @@ clean_las = function(las, bole_height=1, quantile=0.001) {
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las_rotated = rotate_las_z(las, 90)
-#' \dontrun{plot(las)
-#' plot(las_rotated)}
+#' \donttest{
+#' plot(las)
+#' plot(las_rotated)
+#' }
+#' @return A `LAS` object rotated about the Z axis.
 #' @importFrom recexcavAAR rotate
 #' @importFrom data.table :=
 #' @export

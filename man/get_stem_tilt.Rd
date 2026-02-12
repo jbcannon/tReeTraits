@@ -11,6 +11,9 @@ get_stem_tilt(qsm, terminus_diam_cm = 4)
 
 \item{terminus_diam_cm}{numeric - trunk diameter at which it is treated as a branch.}
 }
+\value{
+A single numeric value giving stem tilt in degrees from vertical.
+}
 \description{
 This function calculates tilt of a tree from a QSM. The function identifies
 the upper and lower extreme segments of the QMS (trunk sections only) and

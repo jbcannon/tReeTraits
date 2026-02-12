@@ -14,6 +14,9 @@ individually segmented tree}
 ground points may not be identifiable with common algorithms if
 ground points are removed during segmentation}
 }
+\value{
+A `LAS` object with Z values normalized to ground level.
+}
 \description{
 Function to normalize LAS object. Function calculates
 ground level based on the parameter specified by `quantile`,

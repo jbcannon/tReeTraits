@@ -14,6 +14,9 @@ the CROWN of a tree. Crowns must be segmented using [segment_crown()].}
 
 \item{angle}{numeric - in degrees, rotation angle about Z axis.}
 }
+\value{
+A numeric value representing crown lacunarity (unitless).
+}
 \description{
 This function calculates the lacunarity or "porosity" of a tree crown
 by defined as 1 - the ratio of a voxelized crown hull and a convex hull.

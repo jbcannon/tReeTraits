@@ -21,7 +21,8 @@ extract_patch_params(
 \item{default_patch2max}{Numeric. Default value for DA (patch_diam2max).}
 }
 \value{
-A named list with \code{patch_diam1}, \code{patch_diam2min}, \code{patch_diam2max}.
+A named list with elements `patch_diam1`,
+`patch_diam2min`, and `patch_diam2max`.
 }
 \description{
 Internal helper function to parse patch diameters (D, DI, DA) from

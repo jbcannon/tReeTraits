@@ -13,6 +13,7 @@
 #' las = clean_las(las)
 #' print(get_height(las))
 #' @importFrom stats quantile
+#' @return A named numeric vector with element `height` (m).
 #' @export
 get_height = function(las, quantiles = c(0, 1)) {
   stopifnot(inherits(las, "LAS"))
@@ -35,6 +36,8 @@ get_height = function(las, quantiles = c(0, 1)) {
 #' @param quantiles Z quantiles at which widths are measured
 #' are measured. Values in the interval (0,1) are recommended to trim
 #' random noise.
+#' @return A named numeric vector with elements `mean_width`, `x_width`,
+#' and `y_width` (m).
 #' @examples
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -63,6 +66,7 @@ get_width = function(las, quantiles = c(0.001, 0.999)) {
 #' @param verticality_threshold numeric - filter value for Verticality threshold to remove
 #' horizontal branches.
 #' @param select_n numeric - number of points selected on every RANSAC iteration.
+#' @return A named numeric vector with element `dbh` (m).
 #' @examples
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -109,6 +113,7 @@ get_dbh = function(las, intensity_threshold=41000,
 #' @param sustain numeric - number of segments in a row that treshold must be
 #' exceeded before identifying start of crown. This is to exclude small segments
 #' of crown isolated from larger continuous crown.
+#' @return A named numeric vector with element `crown_base_height` (m).
 #' @param segment_height numeric - height of each segment in which to calculate area
 #' @param quantile numeric - quantile at which width is measured
 #' Values in the interval approaching 0 (e.g., 0.001) are recommended to
@@ -125,7 +130,7 @@ get_dbh = function(las, intensity_threshold=41000,
 #' print(cbh)
 #' @export
 get_crown_base = function(las, threshold = 0.5, sustain = 2,
-                           segment_height = 0.25, quantile = 0.01) {
+                          segment_height = 0.25, quantile = 0.01) {
   area_profile = get_area_profile(las, segment_height=segment_height, quantile=quantile)
   x=area_profile$width
   area_profile$difference = c(sapply(2:length(x), function(i) x[i+1] - x[i]), NA)
@@ -150,6 +155,8 @@ get_crown_base = function(las, threshold = 0.5, sustain = 2,
 #' height.
 #' @param las `LAS` object from `lidR` package representing
 #' individually segmented tree, with the crown labeled.
+#' @return A tibble with columns `bottom`, `top`, `width`, `area`,
+#' and `angle` describing the vertical area profile.
 #' @param segment_height numeric - height of each segment in which to calculate area
 #' @param quantile numeric - quantile at which width is measured
 #' Values in the interval approaching 0 (e.g., 0.001) are recommended to
@@ -185,12 +192,14 @@ get_area_profile = function(las, segment_height=0.25, quantile = c(0.001), angle
 #' @param crown_base_height numeric - height of crown base for segmentation.
 #' `NULL`, it is estimated with [get_crown_base()] using default parameters.
 #' @importFrom lidR add_lasattribute
+#' @return The input `LAS` object with a new attribute `Crown`
+#' (1 = crown, 0 = non-crown).
 #' @examples
 #' library(lidR)
 #' las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = clean_las(las)
 #' las = segment_crown(las)
-#' \dontrun{
+#' \donttest{
 #' #Plot with color based on crown
 #' plot(las, color='Crown')
 #' }
@@ -215,6 +224,7 @@ segment_crown = function(las, crown_base_height = NULL) {
 #'  a tree. Crowns must be segmented using [segment_crown()].
 #' @param resolution numeric - resolution of voxelization
 #' @importFrom lidR voxelize_points filter_poi
+#' @return A named numeric vector with element `crown_volume_vox` (m^3).
 #' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -245,6 +255,7 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' @param resolution numeric - resolution of initial voxelization to increase speed
 #' @param alpha numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
 #' See [alphashape3d::ashape3d].
+#' @return A named numeric vector with element `crown_volume_alpha` (m^3).
 #' @importFrom lidR voxelize_points filter_poi
 #' @importFrom alphashape3d ashape3d volume_ashape3d
 #' @export
@@ -280,6 +291,8 @@ get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
 #' @param angle numeric - in degrees, rotation angle about Z axis.
 #' @importFrom lidR filter_poi
 #' @importFrom sf st_as_sf st_convex_hull st_union
+#' @return An `sf` polygon representing the vertical convex hull
+#' of the crown projection.
 #' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -318,6 +331,8 @@ convex_hull_2D = function(las, angle = 0) {
 #' @importFrom sf st_as_sf st_as_sf st_crs
 #' @importFrom terra as.polygons
 #' @importFrom data.table :=
+#' @return An `sf` polygon representing the voxel-based vertical
+#' crown hull.
 #' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -358,6 +373,7 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
 #' @importFrom sf st_area
 #' @importFrom lidR filter_poi
 #' @export
+#' @return A numeric value representing crown lacunarity (unitless).
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' cbh = get_crown_base(las, threshold=0.25, sustain=2)
@@ -393,6 +409,7 @@ get_lacunarity = function(las, res = 0.1, angle = 0) {
 #' @param quantile numeric - quantile at which width is measured
 #' Values in the interval approaching 0 (e.g., 0.001) are recommended to
 #' trim random noise
+#' @return A numeric value representing the crown lever arm.
 #' @param angle numeric - angle at which to rotate the point cloud prior
 #'
 #' to estimating area. Useful in a loop if quantifying mulitple angles
@@ -423,11 +440,12 @@ get_crown_lever_arm = function(las, segment_height=0.25, quantile = c(0.001), an
 #' @param k Number of nearest neighbors for local PCA.
 #' @param name Name of the attribute to store.
 #' @importFrom FNN  get.knnx
-#' @return The input \code{LAS} object with a new attribute.
+#' @return The input `LAS` object with a new numeric attribute
+#' containing verticality values (0–1).
 #' @importFrom FNN get.knnx
 #' @importFrom stats cov
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = add_verticality(las, k = 20)
 #' head(las@data)

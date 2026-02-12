@@ -14,6 +14,11 @@
 #' @param optimizing_metrics Character vector of  metric names to average and
 #' minimize when selecting the best QSM fit. See Details
 #' @param verbose Logical; whether to print details during processing.
+#' @return A list with elements:
+#'   \itemize{
+#'     \item \code{qsm_pars}: Data frame of selected patch parameters and fit metrics.
+#'     \item \code{qsm}: Data frame of cylinder-level QSM output.
+#'   }
 #' @details
 #' The \code{optimizing_metrics} argument controls which point-to-cylinder distance
 #' summaries are used to evaluate TreeQSM fits. These metrics quantify how closely
@@ -106,11 +111,11 @@ run_treeqsm <- function(
   define_input <- import("PyTLidar.Utils.define_input", delay_load = TRUE)$define_input
   inputs_list <- define_input(P, 1, 1, 1)  # 1 tree, 1 model, 1? (use standard args)
   stopifnot(
-  length(patch_diam1) > 0,
-  length(patch_diam2min) > 0,
-  length(patch_diam2max) > 0
-)
-inputs <- inputs_list[[1]]  # get first dict
+    length(patch_diam1) > 0,
+    length(patch_diam2min) > 0,
+    length(patch_diam2max) > 0
+  )
+  inputs <- inputs_list[[1]]  # get first dict
 
   # overwrite just the patch diameters
   patch_diam1 <- c(patch_diam1)
@@ -162,60 +167,12 @@ inputs <- inputs_list[[1]]  # get first dict
   fits$distance <- rowMeans(fits[, optimizing_metrics, drop = FALSE], na.rm = TRUE)
   fits = dplyr::arrange(fits, .data$distance)
   parameters = dplyr::select(dplyr::slice(fits, 1),
-                  dplyr::starts_with("PatchDiam"), .data$distance, dplyr::all_of(optimizing_metrics))
+                             dplyr::starts_with("PatchDiam"), .data$distance, dplyr::all_of(optimizing_metrics))
   best_qsm = file.path(output_dir, 'results', paste0('cylinder_', fits$file[1], '.txt'))
   qsm <- .read_qsm_raw(normalizePath(best_qsm))
   list(qsm_pars = parameters, qsm = qsm)
 }
 
-#' Read a QSM file output from TreeQSM
-#'
-#' @param qsm_file Path to the  QSM output file (.txt).
-#' @return A data frame with columns startX, startY, startZ, endX, endY, endZ,
-#'   cyl_ID, parent_ID, extension_ID, radius_cyl, length, volume, branching_order.
-#' @importFrom readr read_delim
-#' @examples
-#' # Simply load existing qsm and visulalize
-#' qsm_file <- system.file("extdata", "tree_0744_qsm.txt", package = "tReeTraits")
-#' cyl <- read_qsm(qsm_file)
-#' head(cyl)
-#' \dontrun{
-#' # Run and Load a qsm from a laz file.
-#' # ---- Step 1. Define input file  ----
-#' # Input file
-#' file <- system.file("extdata", "tree_0744.laz", package = "tReeTraits")
-#' tree_id <- tools::file_path_sans_ext(basename(file))
-#'
-#' # ---- Step 2. Run TreeQSM ----
-#' # Multiple parameter combinations can be supplied; TreeQSM optimizes across them
-#' qsm_result <- run_treeqsm(
-#'   file = file,
-#'   intensity_threshold = 40000,
-#'   resolution = 0.02,
-#'   patch_diam1 = c(0.05, 0.1),
-#'   patch_diam2min = c(0.04, 0.05),
-#'   patch_diam2max = c(0.12, 0.14),
-#'   verbose = TRUE
-#' )
-#'
-#' # ---- Step 3. Save results ----
-#' write_qsm(
-#'   qsm_result,
-#'   name = tree_id,
-#'   output_dir = tempdir()
-#' )
-#'
-#' # ---- Step 4. Reload QSM ----
-#' qsm_path <- file.path(tempdir(), paste0(tree_id, "_qsm.txt"))
-#' qsm <- load_qsm(qsm_path)
-#'
-#' # ---- Step 5. Visualize ----
-#' plot_qsm2d(qsm, scale = 50)
-#' plot_qsm3d(qsm)}
-#' @export
-read_qsm <- function(qsm_file) {
-  readr::read_delim(qsm_file, show_col_types = FALSE)
-}
 
 #' Read a PyTLidar QSM file
 #'
@@ -241,24 +198,24 @@ read_qsm <- function(qsm_file) {
   colnames(cyl) <- new_headers
 
   cyl <- dplyr::mutate(cyl,
-                     endX = .data$startX + .data$dirX * .data$`length (m)`,
-                     endY = .data$startY + .data$dirY * .data$`length (m)`,
-                     endZ = .data$startZ + .data$dirZ * .data$`length (m)`,
-                     cyl_ID = dplyr::row_number(),
-                     parent_ID = .data$parent,
-                     extension_ID = .data$extension,
-                     length = .data$`length (m)`,
-                     radius_cyl = .data$`radius (m)`,
-                     volume = pi * .data$radius_cyl^2 * .data$`length (m)`,
-                     branching_order = .data$branch_order)
+                       endX = .data$startX + .data$dirX * .data$`length (m)`,
+                       endY = .data$startY + .data$dirY * .data$`length (m)`,
+                       endZ = .data$startZ + .data$dirZ * .data$`length (m)`,
+                       cyl_ID = dplyr::row_number(),
+                       parent_ID = .data$parent,
+                       extension_ID = .data$extension,
+                       length = .data$`length (m)`,
+                       radius_cyl = .data$`radius (m)`,
+                       volume = pi * .data$radius_cyl^2 * .data$`length (m)`,
+                       branching_order = .data$branch_order)
 
   cyl <- dplyr::select(cyl, dplyr::all_of(c(
-        "startX", "startY", "startZ",
-        "endX", "endY", "endZ",
-        "cyl_ID", "parent_ID", "extension_ID",
-        "radius_cyl", "length", "volume",
-        "branching_order"
-      ))
+    "startX", "startY", "startZ",
+    "endX", "endY", "endZ",
+    "cyl_ID", "parent_ID", "extension_ID",
+    "radius_cyl", "length", "volume",
+    "branching_order"
+  ))
   )
   cyl
 }
@@ -295,7 +252,11 @@ read_qsm <- function(qsm_file) {
 #' @param name Base name to use for output files.
 #' @param output_dir Directory where files are written (defaults to current working directory).
 #' @importFrom utils write.table
-#' @return Invisibly returns a list with file paths: \code{qsm} and \code{pars}.
+#' @return Invisibly returns a list with file paths:
+#'   \itemize{
+#'     \item \code{qsm}: Path to the QSM cylinder file.
+#'     \item \code{pars}: Path to the parameter summary file.
+#'   }
 #' @examples
 #' \dontrun{
 #' # Run and Load a qsm from a laz file.

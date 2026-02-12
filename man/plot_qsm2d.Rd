@@ -15,6 +15,9 @@ give line segments the appearance of volume}
 \item{rotation}{boolean - indicates whether the plot should display the
 tree from 2 angles TRUE, or just one FALSE.}
 }
+\value{
+`NULL`, invisibly. Produces a base R plot as a side effect.
+}
 \description{
 Simple function to create a diagnostic plot to view QSMs colored
 by branching order.

@@ -9,6 +9,15 @@ get_primary_branches(qsm)
 \arguments{
 \item{qsm}{a QSM loaded using `[load_qsm()]`.}
 }
+\value{
+A tibble with one row per primary branch containing:
+\describe{
+  \item{section}{Character string ("branches").}
+  \item{diam_cm}{Basal diameter of the branch (cm).}
+  \item{ht_m}{Height of branch attachment (m).}
+  \item{volume}{Placeholder column (currently `NA`).}
+}
+}
 \description{
 Extract primary branches from a QSM by filtering out the the trunk,
 and identifying all cylinders where `branching_order == 1` and
@@ -19,7 +28,6 @@ basal diameter and height of attachment points.
 qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 primary_branches = get_primary_branches(qsm)
-
 #number of primary branches
 nrow(primary_branches)
 }

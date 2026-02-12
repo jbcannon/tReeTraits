@@ -14,14 +14,15 @@ add_verticality(las, k = 30, name = "verticality")
 \item{name}{Name of the attribute to store.}
 }
 \value{
-The input \code{LAS} object with a new attribute.
+The input `LAS` object with a new numeric attribute
+containing verticality values (0–1).
 }
 \description{
 Computes a verticality metric (0-1) for each point in a LAS object based on
 the z-component of the dominant local PCA eigenvector.
 }
 \examples{
-\dontrun{
+\donttest{
 las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las = add_verticality(las, k = 20)
 head(las@data)

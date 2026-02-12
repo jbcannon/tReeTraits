@@ -12,6 +12,9 @@ individually segmented tree}
 
 \item{angle}{numeric - in degrees, rotation angle about Z axis.}
 }
+\value{
+A `LAS` object rotated about the Z axis.
+}
 \description{
 Rotate `LAS` object about the `Z` axis for specified angle.
 }
@@ -19,6 +22,8 @@ Rotate `LAS` object about the `Z` axis for specified angle.
 library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las_rotated = rotate_las_z(las, 90)
-\dontrun{plot(las)
-plot(las_rotated)}
+\donttest{
+plot(las)
+plot(las_rotated)
+}
 }

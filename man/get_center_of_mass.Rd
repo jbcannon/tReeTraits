@@ -9,6 +9,14 @@ get_center_of_mass(qsm)
 \arguments{
 \item{qsm}{qsm object loaded from `[load_qsm]`.}
 }
+\value{
+A tibble with one row and three numeric columns:
+\describe{
+  \item{X}{Volume-weighted X coordinate of the trunk center of mass (m).}
+  \item{Y}{Volume-weighted Y coordinate of the trunk center of mass (m).}
+  \item{Z}{Volume-weighted Z coordinate of the trunk center of mass (m).}
+}
+}
 \description{
 This function calculates the center of mass/volume from a QSM
 by estimating the centroid of cylinder locations, each weighted

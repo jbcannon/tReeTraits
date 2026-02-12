@@ -12,6 +12,9 @@ a tree. Crowns must be segmented using [segment_crown()].}
 
 \item{resolution}{numeric - resolution of voxelization}
 }
+\value{
+A named numeric vector with element `crown_volume_vox` (m^3).
+}
 \description{
 This function volume of a `LAS` object by thinning to a resolution specified
 by `resolution`, and estimating volume using the equation

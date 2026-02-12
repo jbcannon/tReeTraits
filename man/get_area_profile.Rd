@@ -19,6 +19,10 @@ trim random noise}
 \item{angle}{numeric - angle at which to rotate the point cloud prior
 to estimating area. Useful in a loop if quantifying mulitple angles}
 }
+\value{
+A tibble with columns `bottom`, `top`, `width`, `area`,
+and `angle` describing the vertical area profile.
+}
 \description{
 This function calculates the area of the tree profile
 by breaking it into segments of height `segment_height` and estimating

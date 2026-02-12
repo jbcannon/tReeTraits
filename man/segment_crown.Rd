@@ -13,6 +13,10 @@ individually segmented tree}
 \item{crown_base_height}{numeric - height of crown base for segmentation.
 `NULL`, it is estimated with [get_crown_base()] using default parameters.}
 }
+\value{
+The input `LAS` object with a new attribute `Crown`
+(1 = crown, 0 = non-crown).
+}
 \description{
 This function labels all points with $Z > `crown_base_height`$
 and returns a labled LAS. If `crown_base_height` is not specified, it
@@ -23,7 +27,7 @@ library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las = clean_las(las)
 las = segment_crown(las)
-\dontrun{
+\donttest{
 #Plot with color based on crown
 plot(las, color='Crown')
 }

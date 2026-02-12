@@ -29,6 +29,9 @@ of crown isolated from larger continuous crown.}
 Values in the interval approaching 0 (e.g., 0.001) are recommended to
 trim random noise}
 }
+\value{
+A named numeric vector with element `crown_base_height` (m).
+}
 \description{
 This function estimates the crown base height by analyzing the vertical
 profile of the tree using [get_area_profile()] which breaks the profile

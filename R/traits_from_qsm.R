@@ -8,6 +8,12 @@
 #' @param qsm qsm object loaded from `[load_qsm]`.
 #' @importFrom dplyr filter mutate summarize
 #' @importFrom stats weighted.mean
+#' @return A tibble with one row and three numeric columns:
+#' \describe{
+#'   \item{X}{Volume-weighted X coordinate of the trunk center of mass (m).}
+#'   \item{Y}{Volume-weighted Y coordinate of the trunk center of mass (m).}
+#'   \item{Z}{Volume-weighted Z coordinate of the trunk center of mass (m).}
+#' }
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -36,6 +42,9 @@ get_center_of_mass = function(qsm) {
 #' @param qsm a QSM loaded using `[load_qsm()]`.
 #' @param min_diam numeric - minimum diameter (in cm) to include branch
 #' @importFrom dplyr filter mutate arrange
+#' @return A numeric vector of internode distances (m) between consecutive
+#' primary branches that meet the diameter threshold. Returns `NA` if fewer
+#' than two qualifying primary branches are present.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -67,6 +76,13 @@ internode_distances = function(qsm, min_diam = 2) {
 #'   should be plotted as a histogram.
 #' @importFrom dplyr filter summarize group_by
 #' @importFrom graphics plot
+#' @return A tibble summarizing branch volume by diameter class with columns:
+#' \describe{
+#'   \item{diameter_cm}{Factor indicating the diameter class (cm).}
+#'   \item{midpoint}{Numeric midpoint (cm) of each diameter class.}
+#'   \item{volume_mL}{Total branch volume (mL) within the class.}
+#' }
+#' Returns `NA` if fewer than two branch cylinders are present.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -125,6 +141,8 @@ branch_size_distribution = function(qsm, breaks = NULL, plot=TRUE) {
 #' distributed across 1 cm bins.
 #' @param FUN function -- central tendency function to be weighted based on
 #' branch volume.
+#' @return A numeric value representing the volume-weighted statistic
+#' calculated by `FUN` across branch diameter classes.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -156,11 +174,17 @@ branch_volume_weighted_stats = function(qsm, breaks=NULL, FUN = function(x) mean
 #' basal diameter and height of attachment points.
 #' @param qsm a QSM loaded using `[load_qsm()]`.
 #' @importFrom dplyr filter reframe
+#' @return A tibble with one row per primary branch containing:
+#' \describe{
+#'   \item{section}{Character string ("branches").}
+#'   \item{diam_cm}{Basal diameter of the branch (cm).}
+#'   \item{ht_m}{Height of branch attachment (m).}
+#'   \item{volume}{Placeholder column (currently `NA`).}
+#' }
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
 #' primary_branches = get_primary_branches(qsm)
-#'
 #' #number of primary branches
 #' nrow(primary_branches)
 #' @export
@@ -191,6 +215,14 @@ get_primary_branches = function(qsm)
 #' @param qsm a QSM loaded using `[load_qsm()]`.
 #' @param terminus_diam_cm numeric - trunk diameter at which it is treated as a branch.
 #' @param segment_size numeric length of trunk segments in which to summarize volume.
+#' @return A tibble describing vertical volume distribution with columns:
+#' \describe{
+#'   \item{section}{Tree component ("trunk", "terminus", or "branches").}
+#'   \item{diam_cm}{Diameter (cm) of the segment or branch.}
+#'   \item{ht_m}{Height (m) of the segment midpoint or branch attachment.}
+#'   \item{volume}{Total volume (m^3) of the segment (trunk and terminus only;
+#'   `NA` for branches).}
+#' }
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -267,6 +299,13 @@ qsm_volume_distribution = function(qsm, terminus_diam_cm = 4, segment_size=0.5) 
 #' @importFrom ggplot2 ggplot aes geom_point theme_bw labs geom_line
 #' @importFrom ggplot2 element_blank lims
 #' @importFrom stats coef predict nls cor resid
+#' @return A list with components:
+#' \describe{
+#'   \item{data}{Tibble of trunk segment heights and observed diameters used in model fitting.}
+#'   \item{plot}{A `ggplot2` object showing observed diameters and fitted taper curve.}
+#'   \item{results}{Data frame containing fitted Kozak parameters (`a0`–`a3`),
+#'   coefficient of determination (`r2`), and root mean squared error (`rmse`).}
+#' }
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -304,6 +343,8 @@ fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size=0.25, pl
 #' distance between them.
 #' @param qsm a QSM loaded using `[load_qsm()]`.
 #' @importFrom stats dist
+#' @return A single numeric value giving the horizontal distance (m)
+#' between the base of the tree and the volume-weighted center of mass.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -331,6 +372,11 @@ get_com_offset = function(qsm) {
 #' @param qsm QSM loaded using `[load_qsm()]`.
 #' @param terminus_diam_cm numeric -- the trunk diameter at which is no longer
 #' considered trunk
+#' @return A data frame with columns:
+#' \describe{
+#'   \item{Height}{Height (m) of each trunk segment midpoint.}
+#'   \item{sweep}{Perpendicular deviation (m) from the idealized straight stem line.}
+#' }
 #' @param plot boolean -- indicates whether graph of sweep should be plotted.
 #' @importFrom dplyr filter mutate
 #' @examples
@@ -383,6 +429,7 @@ get_stem_sweep = function(qsm, terminus_diam_cm = 4, plot=TRUE) {
 #' @param terminus_diam_cm numeric - trunk diameter at which it is treated as a branch.
 #' @importFrom dplyr filter
 #' @importFrom stats dist
+#' @return A single numeric value giving stem tilt in degrees from vertical.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
@@ -413,10 +460,15 @@ get_stem_tilt = function(qsm, terminus_diam_cm = 4) {
 #' @importFrom readr read_delim
 #' @return A tibble containing the QSM data.
 #' @export
+#' @return A tibble containing the QSM data with validated required columns:
+#' `startX`, `startY`, `startZ`, `endX`, `endY`, `endZ`,
+#' `cyl_ID`, `parent_ID`, `extension_ID`,
+#' `radius_cyl`, `length`, `volume`, and `branching_order`.
+#' An error is thrown if any required columns are missing.
 #' @examples
-#' \dontrun{
-#' qsm <- load_qsm("path/to/qsm.txt")
-#' }
+#' qsm_path = system.file('extdata', 'tree_0744_qsm.txt', package='tReeTraits')
+#' qsm <- load_qsm(qsm_path)
+#' plot_qsm2d(qsm, scale=50)
 load_qsm <- function(path) {
   # Required column names
   required_cols <- c(

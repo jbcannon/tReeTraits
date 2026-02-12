@@ -27,6 +27,15 @@ grouped into}
 \item{plot}{boolean -- indicates whether model output should be plotted. Plots
 are found in the output list as object$plot, regardless of this setting.}
 }
+\value{
+A list with components:
+\describe{
+  \item{data}{Tibble of trunk segment heights and observed diameters used in model fitting.}
+  \item{plot}{A `ggplot2` object showing observed diameters and fitted taper curve.}
+  \item{results}{Data frame containing fitted Kozak parameters (`a0`–`a3`),
+  coefficient of determination (`r2`), and root mean squared error (`rmse`).}
+}
+}
 \description{
 This function fits a taper equation to trunk sections of a QSM using
 Kozak the Model (2002, 2007).

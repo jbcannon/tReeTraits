@@ -8,6 +8,7 @@
 #' @param res numeric - resolution of voxelization to speed up plotting
 #' @param plot boolean - indicates whether to print the output plot, in
 #' both cases a ggplot object is returned in the output.
+#' @return A `ggplot` object containing the arranged diagnostic panels.
 #' @examples
 #' # example code
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
@@ -52,13 +53,16 @@ plot_tree = function(las, res = 0.05, plot=TRUE) {
 #' @param rotation boolean - indicates whether the plot should display the
 #' tree from 2 angles TRUE, or just one FALSE.
 #' @importFrom graphics par axis arrows
+#' @return `NULL`, invisibly. Produces a base R plot as a side effect.
 #' @examples
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
 #' plot_qsm2d(qsm)
 #' @export
 plot_qsm2d = function(qsm, scale = 150, rotation=TRUE) {
-  if(rotation) par(mfrow = c(1,2))
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+  if(rotation) {par(mfrow = c(1,2))}
   graphics::par(mar=c(2,2,1,1)+0.5)
   ylim = range(qsm[, c('startZ', 'endZ')])
   plot(NA, NA, xlim = c(-1, 1), ylim = ylim ,asp=1, xlab='', ylab='', axes=FALSE)
@@ -69,7 +73,6 @@ plot_qsm2d = function(qsm, scale = 150, rotation=TRUE) {
     graphics::axis(1);
     with(qsm, graphics::arrows(startY, startZ, endY, endZ, length=0, code=2, col=branching_order+1,lwd=radius_cyl*scale))
   }
-  graphics::par(mfrow=c(1,1))
 }
 
 
@@ -232,7 +235,6 @@ branch_distribution_plot <- function(qsm) {
 #' @importFrom ggpubr ggarrange
 #' @importFrom ggplotify as.ggplot
 #' @examples
-#' \dontrun{
 #' library(lidR)
 #' las_file = system.file("extdata", "tree_0744.laz", package="tReeTraits")
 #' las = lidR::readLAS(las_file)
@@ -244,6 +246,7 @@ branch_distribution_plot <- function(qsm) {
 #' las = segment_crown(las, cbh)
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
+#' \donttest{
 #' full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
 #' }
 #' @export
@@ -285,14 +288,17 @@ full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1
 #' @return Opens an interactive 3D rgl window with rendered cylinders.
 #'   Returns \code{NULL} invisibly.
 #' @importFrom rgl open3d bg3d aspect3d cylinder3d shade3d axes3d title3d
+#' @return A `ggplot` object combining multiple diagnostic panels.
 #' @examples
 #' # Load QSM output (example path)
 #' qsm_file = system.file('extdata',"tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
 #' # Plot with real radii
-#'\dontrun{
-#' plot_qsm3d(qsm, color = "forestgreen", alpha = 0.6)}
+#'\donttest{
+#' plot_qsm3d(qsm, color = "forestgreen", alpha = 0.6)
+#' }
 #' @importFrom rgl open3d bg3d aspect3d cylinder3d shade3d title3d
+#' @importFrom rlang .data
 #' @export
 plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {
   # Open new 3D window
@@ -330,7 +336,8 @@ plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {
 #' @param default_patch2max Numeric. Default value for DA (patch_diam2max).
 #' @importFrom tools file_path_sans_ext
 #' @importFrom stringr str_match
-#' @return A named list with \code{patch_diam1}, \code{patch_diam2min}, \code{patch_diam2max}.
+#' @return A named list with elements `patch_diam1`,
+#' `patch_diam2min`, and `patch_diam2max`.
 #' @keywords internal
 extract_patch_params <- function(filepath,
                                  default_patch1,

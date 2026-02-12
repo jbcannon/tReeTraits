@@ -20,6 +20,8 @@ Defaults to \code{0.7}.}
 \value{
 Opens an interactive 3D rgl window with rendered cylinders.
   Returns \code{NULL} invisibly.
+
+A `ggplot` object combining multiple diagnostic panels.
 }
 \description{
 Renders a 3D visualization of tree cylinders (from a Quantitative Structure Model, QSM)
@@ -39,6 +41,7 @@ a separate mesh. Consider downsampling or filtering before plotting.
 qsm_file = system.file('extdata',"tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 # Plot with real radii
-\dontrun{
-plot_qsm3d(qsm, color = "forestgreen", alpha = 0.6)}
+\donttest{
+plot_qsm3d(qsm, color = "forestgreen", alpha = 0.6)
+}
 }

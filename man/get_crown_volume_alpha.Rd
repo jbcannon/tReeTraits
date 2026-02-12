@@ -15,6 +15,9 @@ a tree. Crowns must be segmented using [segment_crown()].}
 \item{alpha}{numeric - alpha for the computation of the 3D alpha-shape of the point cloud.
 See [alphashape3d::ashape3d].}
 }
+\value{
+A named numeric vector with element `crown_volume_alpha` (m^3).
+}
 \description{
 This function volume of a `LAS` object by thinning to a resolution specified
 by `resolution`, and estimating volume by fitting a alpha shape volume.
