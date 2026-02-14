@@ -29,7 +29,7 @@ Generate a diagnostic plot to assess basic metrics and QSM output
 \examples{
 library(lidR)
 las_file = system.file("extdata", "tree_0744.laz", package="tReeTraits")
-las = lidR::readLAS(las_file)
+las = lidR::readLAS(las_file, filter = '-thin_with_voxel 0.1')
 las = clean_las(las, bole_height=3)
 height = get_height(las)
 crown_width = get_width(las)

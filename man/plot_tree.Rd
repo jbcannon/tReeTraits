@@ -25,7 +25,9 @@ segmentations.
 }
 \examples{
 # example code
-las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+library(lidR)
+file = system.file("extdata", "tree_0744.laz", package="tReeTraits")
+las = readLAS(file, filter = '-thin_with_voxel 0.1')
 las = clean_las(las)
 plot_tree(las)
 }
