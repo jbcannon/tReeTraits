@@ -248,9 +248,7 @@ branch_distribution_plot <- function(qsm) {
 #' las = segment_crown(las, cbh)
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
-#' \donttest{
 #' full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
-#' }
 #' @export
 full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1) {
   r = plot_tree(las, plot=FALSE)

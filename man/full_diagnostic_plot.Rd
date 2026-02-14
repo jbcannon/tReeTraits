@@ -38,7 +38,5 @@ cbh = get_crown_base(las, threshold=0.25, sustain=2)
 las = segment_crown(las, cbh)
 qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
-\donttest{
 full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
-}
 }
