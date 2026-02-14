@@ -15,6 +15,7 @@ Imports:
   ggplot2,
   ggpubr,
   recexcavAAR,
+  rlang,
   sf,
   spanner,
   terra,
