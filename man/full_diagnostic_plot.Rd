@@ -23,6 +23,11 @@ from `get_dbh()`}
 
 \item{res}{numeric - resolution of voxelization to speed up plotting}
 }
+\value{
+A multi-panel `ggplot` object (class `ggarrange`) summarizing
+  tree structural metrics and QSM diagnostics, suitable for printing
+  or saving with `ggplot2`.
+}
 \description{
 Generate a diagnostic plot to assess basic metrics and QSM output
 }
@@ -38,5 +43,5 @@ cbh = get_crown_base(las, threshold=0.25, sustain=2)
 las = segment_crown(las, cbh)
 qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
-full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
+full_diagnostic_plot(las=las, qsm=qsm, height=height, cbh=cbh, crown_width=crown_width, dbh=dbh)
 }

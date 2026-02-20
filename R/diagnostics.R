@@ -75,6 +75,7 @@ plot_qsm2d = function(qsm, scale = 150, rotation=TRUE) {
     graphics::axis(1);
     with(qsm, graphics::arrows(startY, startZ, endY, endZ, length=0, code=2, col=branching_order+1,lwd=radius_cyl*scale))
   }
+  invisible(NULL)
 }
 
 
@@ -236,6 +237,9 @@ branch_distribution_plot <- function(qsm) {
 #' @param res numeric - resolution of voxelization to speed up plotting
 #' @importFrom ggpubr ggarrange
 #' @importFrom ggplotify as.ggplot
+#' @return A multi-panel `ggplot` object (class `ggarrange`) summarizing
+#'   tree structural metrics and QSM diagnostics, suitable for printing
+#'   or saving with `ggplot2`.
 #' @examples
 #' library(lidR)
 #' las_file = system.file("extdata", "tree_0744.laz", package="tReeTraits")
@@ -248,7 +252,7 @@ branch_distribution_plot <- function(qsm) {
 #' las = segment_crown(las, cbh)
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
-#' full_diagnostic_plot(las, qsm, height, cbh, crown_width, dbh)
+#' full_diagnostic_plot(las=las, qsm=qsm, height=height, cbh=cbh, crown_width=crown_width, dbh=dbh)
 #' @export
 full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1) {
   r = plot_tree(las, plot=FALSE)

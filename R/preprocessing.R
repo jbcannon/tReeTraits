@@ -54,11 +54,9 @@ normalize_las = function(las, quantile=c(0.001)) {
 #' hist(las$Y)
 #' las = recenter_las(las)
 #' # view histogram of X/Y values centered on 0,0
-#' oldpar <- par(no.readonly = TRUE)
-#' par(mfrow=c(1,2))
 #' hist(las$X)
+#'
 #' hist(las$Y)
-#' par(oldpar)
 #' @importFrom lidR las_update
 #' @importFrom data.table :=
 #' @export

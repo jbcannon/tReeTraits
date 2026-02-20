@@ -31,9 +31,7 @@ hist(las$X)
 hist(las$Y)
 las = recenter_las(las)
 # view histogram of X/Y values centered on 0,0
-oldpar <- par(no.readonly = TRUE)
-par(mfrow=c(1,2))
 hist(las$X)
+
 hist(las$Y)
-par(oldpar)
 }
