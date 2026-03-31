@@ -128,6 +128,7 @@ run_treeqsm <- function(
   inputs$BallRad2 <- np$array(patch_diam2max + 0.01)
   inputs$savemat = 0
   inputs$savepdf=0
+  inputs$plot=0L
   if(!verbose) inputs$disp=1
 
   message("Running PyTLidar TreeQSM...")
