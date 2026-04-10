@@ -280,6 +280,7 @@ full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1
 #' @param color Cylinder color. Defaults to \code{"black"}.
 #' @param alpha Transparency level for cylinders, between 0 (fully transparent) and 1 (fully opaque).
 #'   Defaults to \code{0.7}.
+#' @param axes Boolean, whether to add axes to rgl 3d plot
 #'
 #' @details
 #' This function uses \pkg{rgl} to draw 3D cylinders representing each segment
@@ -304,7 +305,7 @@ full_diagnostic_plot = function(las, qsm, height, cbh, crown_width, dbh, res=0.1
 #' @importFrom rgl open3d bg3d aspect3d cylinder3d shade3d title3d
 #' @importFrom rlang .data
 #' @export
-plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {
+plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7, axes=TRUE) {
   # Open new 3D window
   rgl::open3d()
   rgl::bg3d(bg)
@@ -323,9 +324,11 @@ plot_qsm3d <- function(qsm, bg='white', color='black', alpha=0.7) {
       ),
       color = color, alpha = alpha)
   }))
-  rgl::axes3d()
-  rgl::title3d(xlab = "X", ylab = "Y", zlab = "Z")
-
+  if(axes) {
+    rgl::axes3d()
+    rgl::title3d(xlab = "X", ylab = "Y", zlab = "Z")  
+  }
+  
 }
 
 
