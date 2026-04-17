@@ -313,7 +313,7 @@ qsm_volume_distribution = function(qsm, terminus_diam_cm = 4, segment_size=0.5) 
 #' @export
 #'
 fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size=0.25, plot=TRUE) {
-  taper = qsm_volume_distribution(qsm, terminus_diam_cm = 2, segment_size=0.25)
+  taper = qsm_volume_distribution(qsm, terminus_diam_cm = terminus_diam_cm, segment_size=segment_size)
   taper = dplyr::select(dplyr::filter(taper, .data$section == 'trunk'), .data$ht_m, .data$diam_cm)
   H = max(qsm$endZ)
   # Kozak function
@@ -334,6 +334,7 @@ fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size=0.25, pl
   output = list(data=taper, plot=myPlot, results=results)
   return(output)
 }
+
 
 #' Horizontal offset of center of mass from QSM
 #'
