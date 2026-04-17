@@ -348,8 +348,17 @@ fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size = 0.25, 
   }
   
   # Fit model with user-specified starting values
-  mod = stats::nls(d, data = taper, 
-                   start = list(a0 = start_a0, a1 = start_a1, a2 = start_a2, a3 = start_a3))
+  mod = tryCatch({
+    stats::nls(d, data = taper, 
+               start = list(a0 = start_a0, a1 = start_a1, 
+                           a2 = start_a2, a3 = start_a3),
+               control = list(maxiter = 100, warnOnly = TRUE))
+  }, error = function(e) {
+    # Fallback: try minpack.lm which is more robust
+    minpack.lm::nlsLM(d, data = taper,
+                      start = list(a0 = start_a0, a1 = start_a1,
+                                  a2 = start_a2, a3 = start_a3))
+  })
   
   # Calculate fit statistics using actual diameters
   pred_diam = stats::predict(mod) * dbh
