@@ -301,6 +301,10 @@ qsm_volume_distribution = function(qsm, terminus_diam_cm = 4, segment_size=0.5) 
 #' are grouped into. Default is 0.25 m.
 #' @param plot boolean -- indicates whether model output should be plotted. Plots
 #' are found in the output list as object$plot, regardless of this setting.
+#' @param start_a0 numeric -- starting value for a0 parameter in nls fitting. Default is 1.
+#' @param start_a1 numeric -- starting value for a1 parameter in nls fitting. Default is -1.3.
+#' @param start_a2 numeric -- starting value for a2 parameter in nls fitting. Default is 3.
+#' @param start_a3 numeric -- starting value for a3 parameter in nls fitting. Default is -5.
 #' @importFrom dplyr select filter
 #' @importFrom ggplot2 ggplot aes geom_point theme_bw labs geom_line theme
 #' @importFrom ggplot2 element_blank lims
@@ -316,9 +320,13 @@ qsm_volume_distribution = function(qsm, terminus_diam_cm = 4, segment_size=0.5) 
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)
 #' fit_taper_Kozak(qsm, dbh = 13.8)
+#' 
+#' # For a stubborn tree, try different starting values:
+#' fit_taper_Kozak(qsm, dbh = 13.8, start_a0 = 0.9, start_a1 = -1, start_a2 = 2, start_a3 = -3)
 #' @export
 #'
-fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size = 0.25, plot = TRUE) {
+fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size = 0.25, plot = TRUE,
+                           start_a0 = 1, start_a1 = -1.3, start_a2 = 3, start_a3 = -5) {
   # Extract trunk taper data using specified terminus diameter and segment size
   taper = qsm_volume_distribution(qsm, terminus_diam_cm = terminus_diam_cm, segment_size = segment_size)
   taper = dplyr::select(dplyr::filter(taper, .data$section == 'trunk'), .data$ht_m, .data$diam_cm)
@@ -339,8 +347,9 @@ fit_taper_Kozak = function(qsm, dbh, terminus_diam_cm = 4, segment_size = 0.25, 
     (a0 + a1 * h_norm + a2 * h_norm^2 + a3 * h_norm^3) * dbh
   }
   
-  # Fit model
-  mod = stats::nls(d, data = taper, start = list(a0 = 1, a1 = -1.3, a2 = 3, a3 = -5))
+  # Fit model with user-specified starting values
+  mod = stats::nls(d, data = taper, 
+                   start = list(a0 = start_a0, a1 = start_a1, a2 = start_a2, a3 = start_a3))
   
   # Calculate fit statistics using actual diameters
   pred_diam = stats::predict(mod) * dbh
