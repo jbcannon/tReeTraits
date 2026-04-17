@@ -28,4 +28,5 @@ Imports:
   rgl,
   stats,
   stringr,
-  readr
+  readr,
+  minpack.lm
