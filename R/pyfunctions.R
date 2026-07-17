@@ -215,7 +215,7 @@ run_treeqsm <- function(
     "endX", "endY", "endZ",
     "cyl_ID", "parent_ID", "extension_ID",
     "radius_cyl", "length", "volume",
-    "branching_order"
+    "branch", "branching_order"
   ))
   )
   cyl
