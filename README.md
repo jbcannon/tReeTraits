@@ -21,11 +21,12 @@ It combines functionality from multiple tools including [TreeQSM](https://github
 This package depends on CRAN and GitHub packages:
 
 ```{r}
-install.packages("lidR")
+# install.packages("lidR")
+devtools::install_github('r-lidar/lidR') # As of 9/3/2026, lidR not on CRAN, should be back online ~October.
 install.packages("remotes")  # For GitHub installation
 
 # Install tReeTraits itself
-install.packages("tReetraits") #latest CRAN release
+#install.packages("tReetraits") #latest CRAN release; but unavailable until lidR issue is resolved. use dev version
 devtools::install_github("jbcannon/tReeTraits") #development version
 ```
 
