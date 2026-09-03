@@ -102,42 +102,26 @@ run_treeqsm <- function(
   las <- recenter_las(las, height = 1)
   las <- lidR::las_update(las)
 
-  # las_points is your normalized, recentered LAS point matrix
-  np <- import("numpy")
+  # Point matrix handed to Python; reticulate converts it to a numpy array
   P <- as.matrix(las@data[, c("X", "Y", "Z")])
-  P <- np$array(P)  # This is what you pass to Python
 
-  # Build inputs dictionary for PyTLidar
-  define_input <- import("PyTLidar.Utils.define_input", delay_load = TRUE)$define_input
-  inputs_list <- define_input(P, 1, 1, 1)  # 1 tree, 1 model, 1? (use standard args)
-  stopifnot(
-    length(patch_diam1) > 0,
-    length(patch_diam2min) > 0,
-    length(patch_diam2max) > 0
+  # build_inputs sets the patch diameters, ball radii and flags the way the PyTLidar CLIs do.
+  # convert = FALSE keeps the dict in Python so single values survive the trip to treeqsm.
+  pipeline <- import("PyTLidar.pipeline", convert = FALSE, delay_load = TRUE)
+  inputs <- pipeline$build_inputs(
+    P,
+    custom = list(as.list(patch_diam1), as.list(patch_diam2min), as.list(patch_diam2max)),
+    savemat = 0L,
+    savetxt = 1L,
+    plot = 0L,
+    disp = if (verbose) 2L else 1L,
+    savepdf = 0L
   )
-  inputs <- inputs_list[[1]]  # get first dict
-
-  # overwrite just the patch diameters
-  patch_diam1 <- c(patch_diam1)
-  patch_diam2min <- c(patch_diam2min)
-  patch_diam2max <- c(patch_diam2max)
-  inputs$PatchDiam1 <- np$array(patch_diam1)
-  inputs$PatchDiam2Min <- np$array(patch_diam2min)
-  inputs$PatchDiam2Max <- np$array(patch_diam2max)
-  inputs$BallRad1 <- np$array(patch_diam1 + 0.01)
-  inputs$BallRad2 <- np$array(patch_diam2max + 0.01)
-  inputs$savemat = 0
-  inputs$savepdf=0
-  inputs$plot=0L
-  if(!verbose) inputs$disp=1
+  inputs <- reticulate::py_get_item(inputs, 0L)
 
   message("Running PyTLidar TreeQSM...")
-  # import necessary modules
-  pytlidar <- import("PyTLidar", delay_load = TRUE)
-  treeqsm <- import("PyTLidar.treeqsm", delay_load = TRUE)
-
   res <- tryCatch(
-    treeqsm$treeqsm(P, inputs, results_location = output_dir),
+    reticulate::py_to_r(pipeline$run_qsm(P, inputs, results_dir = output_dir)),
     error = function(e) stop("Error running PyTLidar TreeQSM: ", e$message)
   )
 
