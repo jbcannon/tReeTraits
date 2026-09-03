@@ -14,7 +14,7 @@
 setup_pytlidar <- function() {
   envname <- "r-reticulate-pytlidar"
   python_version <- "3.11"
-  required_modules <- c("torch", "numpy==2.2", "robpy", "PyTLidar")
+  required_modules <- c("PyTLidar")
 
   # 1. Ensure conda exists
   conda_exists <- tryCatch({
