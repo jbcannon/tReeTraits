@@ -9,23 +9,36 @@ fit_taper_Kozak(
   dbh,
   terminus_diam_cm = 4,
   segment_size = 0.25,
-  plot = TRUE
+  plot = TRUE,
+  start_a0 = 1,
+  start_a1 = -1.3,
+  start_a2 = 3,
+  start_a3 = -5
 )
 }
 \arguments{
 \item{qsm}{a QSM loaded using `[load_qsm()]`.}
 
-\item{dbh}{numeric -- required to fit Kozak model, not calculated from QSM, so
-as not to conflict with other more accurate means of measurement e.g., `get_DBH'}
+\item{dbh}{numeric -- DBH in cm, required to fit Kozak model. Not calculated
+from QSM to avoid conflict with other more accurate measurement methods
+(e.g., `get_DBH`).}
 
-\item{terminus_diam_cm}{numeric -- the trunk diameter at which is no longer
-considered trunk}
+\item{terminus_diam_cm}{numeric -- the minimum trunk diameter (cm) below which
+the trunk is no longer considered. Default is 4 cm.}
 
-\item{segment_size}{numeric -- the length of segments that QSM cylinders are
-grouped into}
+\item{segment_size}{numeric -- the length of segments (m) that QSM cylinders
+are grouped into. Default is 0.25 m.}
 
 \item{plot}{boolean -- indicates whether model output should be plotted. Plots
 are found in the output list as object$plot, regardless of this setting.}
+
+\item{start_a0}{numeric -- starting value for a0 parameter in nls fitting. Default is 1.}
+
+\item{start_a1}{numeric -- starting value for a1 parameter in nls fitting. Default is -1.3.}
+
+\item{start_a2}{numeric -- starting value for a2 parameter in nls fitting. Default is 3.}
+
+\item{start_a3}{numeric -- starting value for a3 parameter in nls fitting. Default is -5.}
 }
 \value{
 A list with components:
@@ -38,17 +51,24 @@ A list with components:
 }
 \description{
 This function fits a taper equation to trunk sections of a QSM using
-Kozak the Model (2002, 2007).
+the Kozak Model (2002, 2007).
 }
 \details{
-$ d(h)/D = a0 (h/H) + a1 (h/H) + a2 (h/H)^2 + a3 (h/H)^3 $
+The normalized Kozak equation is:
+\deqn{d(h)/D = a_0 + a_1(h/H) + a_2(h/H)^2 + a_3(h/H)^3}
+
+where \eqn{d(h)} is diameter at height \eqn{h}, \eqn{D} is DBH, and \eqn{H}
+is total tree height. Both diameter and height are normalized to create
+dimensionless ratios.
 
 The function groups QSM cylinders into segments of `segment_size` up to
-`terminus_diam` which is the maximum diameter at which the taper equation
-ends.
+`terminus_diam_cm` which is the minimum diameter at which the trunk ends.
 }
 \examples{
 qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 qsm = load_qsm(qsm_file)
 fit_taper_Kozak(qsm, dbh = 13.8)
+
+# For a stubborn tree, try different starting values:
+fit_taper_Kozak(qsm, dbh = 13.8, start_a0 = 0.9, start_a1 = -1, start_a2 = 2, start_a3 = -3)
 }

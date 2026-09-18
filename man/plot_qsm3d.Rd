@@ -4,7 +4,7 @@
 \alias{plot_qsm3d}
 \title{Plot QSM Cylinders in 3D}
 \usage{
-plot_qsm3d(qsm, bg = "white", color = "black", alpha = 0.7)
+plot_qsm3d(qsm, bg = "white", color = "black", alpha = 0.7, axes = TRUE)
 }
 \arguments{
 \item{qsm}{A data frame or tibble containing QSM cylinder data with columns:
@@ -16,6 +16,8 @@ plot_qsm3d(qsm, bg = "white", color = "black", alpha = 0.7)
 
 \item{alpha}{Transparency level for cylinders, between 0 (fully transparent) and 1 (fully opaque).
 Defaults to \code{0.7}.}
+
+\item{axes}{Boolean, whether to add axes to rgl 3d plot}
 }
 \value{
 Opens an interactive 3D rgl window with rendered cylinders.

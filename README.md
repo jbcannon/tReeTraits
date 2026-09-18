@@ -1,10 +1,18 @@
 # 🌲📐tReeTraits 📐🌲
 
+[![CRAN status](https://www.r-pkg.org/badges/version/tReeTraits)](https://cran.r-project.org/package=tReeTraits)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/tReeTraits)](https://cran.r-project.org/package=tReeTraits)
+[![License: GPL-3](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
+
 **An R Package to generate data on tree architecture from terrestrial lidar scans**
 
 `tReeTraits` helps quantify tree architecture, especially traits relevant to windfirmness (e.g., crown area, volume, stem taper, branch size distribution), from individually segmented trees in terrestrial lidar datasets.
 
 It combines functionality from multiple tools including [TreeQSM](https://github.com/InverseTampere/TreeQSM/), [PyTLidar](https://github.com/Landscape-CV/PyTLiDAR), [lidR](https://r-lidar.github.io/lidRbook/), [spanner](https://github.com/bi0m3trics/spanner), and follows methods described in Cannon et al. (in prep).
+
+<img src="man/figures/downloads.png" width="500"/>
+
+Weekly CRAN downloads (source: [cranlogs](https://cranlogs.r-pkg.org/); regenerate with `dev.R`).
 
 ------------------------------------------------------------------------
 
@@ -18,16 +26,14 @@ It combines functionality from multiple tools including [TreeQSM](https://github
 
 ## 📦 Installation
 
-This package depends on CRAN and GitHub packages:
+All dependencies (including `lidR`, `spanner`, and `CrownScorchTLS`) are now available on CRAN:
 
 ```{r}
-# install.packages("lidR")
-devtools::install_github('r-lidar/lidR') # As of 9/3/2026, lidR not on CRAN, should be back online ~October.
-install.packages("remotes")  # For GitHub installation
+install.packages("tReeTraits")
 
-# Install tReeTraits itself
-#install.packages("tReetraits") #latest CRAN release; but unavailable until lidR issue is resolved. use dev version
-devtools::install_github("jbcannon/tReeTraits") #development version
+# or the development version
+install.packages("remotes")
+devtools::install_github("jbcannon/tReeTraits")
 ```
 
 ## 🔧 Requirements (for QSM features)

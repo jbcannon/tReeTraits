@@ -1,7 +1,7 @@
 Package: tReeTraits
 Type: Package
 Title: Calculate Tree Traits from Terrestrial Lidar
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: c(person(given = c("Jeffery", "B."),family = "Cannon", role = c("aut", "cre"), email = "jeffery.cannon@jonesctr.org"))
 Description: Measuring tree architecture from terrestrial lidar data, including tree-level properties, crown characteristics, and structural attributes derived from quantitative structure models (QSMs).
 License: GPL-3

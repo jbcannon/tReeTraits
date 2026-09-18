@@ -1,7 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^cran-comments\.md$
 dev.R
 .Rhistory
 .gitattributes
 .github
 .gitignore
+^CRAN-SUBMISSION$
