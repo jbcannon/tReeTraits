@@ -10,10 +10,6 @@
 
 It combines functionality from multiple tools including [TreeQSM](https://github.com/InverseTampere/TreeQSM/), [PyTLidar](https://github.com/Landscape-CV/PyTLiDAR), [lidR](https://r-lidar.github.io/lidRbook/), [spanner](https://github.com/bi0m3trics/spanner), and follows methods described in Cannon et al. (in prep).
 
-<img src="man/figures/downloads.png" width="500"/>
-
-Weekly CRAN downloads (source: [cranlogs](https://cranlogs.r-pkg.org/); regenerate with `dev.R`).
-
 ------------------------------------------------------------------------
 
 ## ✨ Features
@@ -262,3 +258,11 @@ basics_diagnostic_plot(las, height=24.1, cbh=13.9, crown_width=2.29, dbh=0.329, 
 ## 📖 Citation
 
 The `treeTraits` package is associated with Cannon et al. (in press) XXXX. Please return at a later date for a full citation.
+
+------------------------------------------------------------------------
+
+## 📈 Downloads
+
+<img src="man/figures/downloads.png" width="650"/>
+
+Updated weekly from [cranlogs](https://cranlogs.r-pkg.org/) by a GitHub Action (`dev.R`).
