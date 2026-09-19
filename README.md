@@ -2,6 +2,7 @@
 
 [![CRAN status](https://www.r-pkg.org/badges/version/tReeTraits)](https://cran.r-project.org/package=tReeTraits)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/tReeTraits)](https://cran.r-project.org/package=tReeTraits)
+[![R-CMD-check](https://github.com/jbcannon/tReeTraits/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jbcannon/tReeTraits/actions/workflows/R-CMD-check.yaml)
 [![License: GPL-3](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 
 **An R Package to generate data on tree architecture from terrestrial lidar scans**
