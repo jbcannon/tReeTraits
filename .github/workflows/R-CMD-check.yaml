@@ -49,6 +49,12 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
+      # rlas (a lidR dependency) has no macOS binary for the current R, so it is
+      # built from source and its configure step needs GDAL and friends.
+      - name: Install macOS system dependencies
+        if: runner.os == 'macOS'
+        run: brew install geos proj sqlite gdal
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
