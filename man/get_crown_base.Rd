@@ -4,7 +4,7 @@
 \alias{get_crown_base}
 \title{Estimate crown base height of `LAS` representing segmented tree.}
 \usage{
-get_crown_base(las, bin_size = 0.25)
+get_crown_base(las, bin_size = 0.5)
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing

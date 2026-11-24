@@ -27,6 +27,7 @@ overlays the voxel hull in color and the convex hull as a dashed outline.
 library(lidR)
 file = system.file('extdata', file='tree_0744.laz', package='tReeTraits')
 las <- readLAS(file)
+las <- clean_las(las)
 las <- segment_crown(las)  # adds `Crown` column
 hull_diagnostic_plot(las)
 }

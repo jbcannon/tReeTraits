@@ -125,7 +125,7 @@ get_dbh = function(las, intensity_threshold=41000,
 #' cbh = get_crown_base(las)
 #' print(cbh)
 #' @export
-get_crown_base = function(las, bin_size = 0.25) {
+get_crown_base = function(las, bin_size = 0.5) {
   spread_df = dplyr::mutate(las@data, Z_bin = floor(.data$Z / bin_size) * bin_size)
   spread_df = dplyr::group_by(spread_df, .data$Z_bin)
   spread_df = dplyr::mutate(spread_df,
@@ -310,6 +310,7 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = clean_las(las)
 #' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
@@ -425,6 +426,7 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
 #' @return A numeric value representing crown lacunarity (unitless).
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
+#' las = clean_las(las)
 #' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
