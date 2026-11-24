@@ -99,9 +99,56 @@ get_dbh = function(las, intensity_threshold=41000,
 }
 
 
-#' Estimate Crown base height of `LAS` representing segmented tree.
+#' Estimate crown base height of `LAS` representing segmented tree.
 #'
-#' This function estimates the crown base height by analyzing the vertical
+#' This function estimates the crown base height from the vertical change in
+#' horizontal point spread. Points are binned by height (`bin_size`), and in
+#' each bin the mean horizontal distance of points from the bin's centroid is
+#' calculated. This profile is smoothed with a LOESS fit, and the crown base is
+#' taken as the bin where the smoothed spread increases most rapidly
+#' (i.e., where the bole transitions to branches).
+#' @param las `LAS` object from `lidR` package representing
+#' individually segmented tree. Heights (`Z`) are assumed to be normalized.
+#' @param bin_size numeric - height (m) of each vertical bin used to calculate
+#' horizontal spread.
+#' @return A named numeric vector with element `crown_base_height` (m),
+#' measured relative to the lowest point in `las`.
+#' @importFrom dplyr mutate group_by summarize arrange filter slice_max
+#' @importFrom rlang .data
+#' @importFrom stats loess predict
+#' @examples
+#' library(lidR)
+#' las = readLAS(system.file("extdata", "tree_0744.laz", package = "tReeTraits"))
+#' las = clean_las(las)
+#'
+#' # Estimate crown base height
+#' cbh = get_crown_base(las)
+#' print(cbh)
+#' @export
+get_crown_base = function(las, bin_size = 0.25) {
+  spread_df = dplyr::mutate(las@data, Z_bin = floor(.data$Z / bin_size) * bin_size)
+  spread_df = dplyr::group_by(spread_df, .data$Z_bin)
+  spread_df = dplyr::mutate(spread_df,
+    cx = mean(.data$X),
+    cy = mean(.data$Y),
+    dist = sqrt((.data$X - .data$cx)^2 + (.data$Y - .data$cy)^2)
+  )
+  spread_df = dplyr::summarize(spread_df, mean_dist = mean(.data$dist), .groups = "drop")
+  spread_df = dplyr::arrange(spread_df, .data$Z_bin)
+  spread_df$smooth = stats::predict(stats::loess(mean_dist ~ Z_bin, data = spread_df))
+  spread_df = dplyr::mutate(spread_df, d_smooth = c(NA, diff(.data$smooth)))
+  spread_df = dplyr::filter(spread_df, !is.na(.data$d_smooth))
+  change_point = dplyr::slice_max(spread_df, .data$d_smooth, n = 1, with_ties = FALSE)
+  cbh = change_point$Z_bin - min(las@data$Z)
+  return(c(crown_base_height = cbh))
+}
+
+
+#' Estimate Crown base height of `LAS` representing segmented tree (old method).
+#'
+#' **Deprecated.** This is the previous implementation of
+#' [get_crown_base()], retained for comparison only. Use [get_crown_base()]
+#' instead. This function estimates the crown base height by analyzing the vertical
 #' profile of the tree using [get_area_profile()] which breaks the profile
 #'into segments of height `segment_height`. The function estimates
 #' segments exceed a threshold specified by `threshold` which must be exceeded
@@ -126,11 +173,13 @@ get_dbh = function(las, intensity_threshold=41000,
 #' las = clean_las(las)
 #'
 #' # Estimate crown base height
-#' cbh = get_crown_base(las)
+#' cbh = get_crown_base_old(las)
 #' print(cbh)
 #' @export
-get_crown_base = function(las, threshold = 0.5, sustain = 2,
+get_crown_base_old = function(las, threshold = 0.5, sustain = 2,
                           segment_height = 0.25, quantile = 0.01) {
+  .Deprecated("get_crown_base",
+              msg = "`get_crown_base_old()` is deprecated and will be removed in a future release. Use `get_crown_base()` instead.")
   area_profile = get_area_profile(las, segment_height=segment_height, quantile=quantile)
   x=area_profile$width
   area_profile$difference = c(sapply(2:length(x), function(i) x[i+1] - x[i]), NA)
@@ -229,7 +278,7 @@ segment_crown = function(las, crown_base_height = NULL) {
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = clean_las(las)
-#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
@@ -261,7 +310,7 @@ get_crown_volume_voxel = function(las, resolution = 0.1) {
 #' @export
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
-#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
@@ -297,7 +346,7 @@ get_crown_volume_alpha = function(las, resolution = 0.1, alpha=0.5) {
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = clean_las(las)
-#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
@@ -337,7 +386,7 @@ convex_hull_2D = function(las, angle = 0) {
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 #' las = clean_las(las)
-#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)
@@ -376,7 +425,7 @@ voxel_hull_2D = function(las, resolution = 0.1, angle = 0) {
 #' @return A numeric value representing crown lacunarity (unitless).
 #' @examples
 #' las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
-#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' get_crown_volume_voxel(las)
 #' get_crown_volume_alpha(las)

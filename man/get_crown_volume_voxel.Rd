@@ -23,7 +23,7 @@ by `resolution`, and estimating volume using the equation
 \examples{
 las = lidR::readLAS(system.file("extdata", "tree_0744.laz", package="tReeTraits"))
 las = clean_las(las)
-cbh = get_crown_base(las, threshold=0.25, sustain=2)
+cbh = get_crown_base(las)
 las = segment_crown(las, cbh)
 get_crown_volume_voxel(las)
 get_crown_volume_alpha(las)

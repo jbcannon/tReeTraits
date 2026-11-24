@@ -248,7 +248,7 @@ branch_distribution_plot <- function(qsm) {
 #' height = get_height(las)
 #' crown_width = get_width(las)
 #' dbh = get_dbh(las, select_n=30)
-#' cbh = get_crown_base(las, threshold=0.25, sustain=2)
+#' cbh = get_crown_base(las)
 #' las = segment_crown(las, cbh)
 #' qsm_file = system.file("extdata", "tree_0744_qsm.txt", package='tReeTraits')
 #' qsm = load_qsm(qsm_file)

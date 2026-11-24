@@ -90,7 +90,7 @@ Pine tree with vegetation around bole removed.
 height <- get_height(las_clean)
 width  <- get_width(las_clean)[1]
 dbh    <- get_dbh(las_clean, select_n = 30)
-cbh    <- get_crown_base(las_clean, threshold = 0.25, sustain = 2)
+cbh    <- get_crown_base(las_clean)
 ```
 
 ### Crown Structure and Volume

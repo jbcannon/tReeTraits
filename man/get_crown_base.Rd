@@ -2,45 +2,30 @@
 % Please edit documentation in R/traits_from_point_cloud.R
 \name{get_crown_base}
 \alias{get_crown_base}
-\title{Estimate Crown base height of `LAS` representing segmented tree.}
+\title{Estimate crown base height of `LAS` representing segmented tree.}
 \usage{
-get_crown_base(
-  las,
-  threshold = 0.5,
-  sustain = 2,
-  segment_height = 0.25,
-  quantile = 0.01
-)
+get_crown_base(las, bin_size = 0.25)
 }
 \arguments{
 \item{las}{`LAS` object from `lidR` package representing
-individually segmented tree}
+individually segmented tree. Heights (`Z`) are assumed to be normalized.}
 
-\item{threshold}{numeric - threshold width at which crown becomes apparent.
-Recommend a width ~2X greater than anticipated DBH.}
-
-\item{sustain}{numeric - number of segments in a row that treshold must be
-exceeded before identifying start of crown. This is to exclude small segments
-of crown isolated from larger continuous crown.}
-
-\item{segment_height}{numeric - height of each segment in which to calculate area}
-
-\item{quantile}{numeric - quantile at which width is measured
-Values in the interval approaching 0 (e.g., 0.001) are recommended to
-trim random noise}
+\item{bin_size}{numeric - height (m) of each vertical bin used to calculate
+horizontal spread.}
 }
 \value{
-A named numeric vector with element `crown_base_height` (m).
+A named numeric vector with element `crown_base_height` (m),
+measured relative to the lowest point in `las`.
 }
 \description{
-This function estimates the crown base height by analyzing the vertical
-profile of the tree using [get_area_profile()] which breaks the profile
-into segments of height `segment_height`. The function estimates
-segments exceed a threshold specified by `threshold` which must be exceeded
-`sustain` times.
+This function estimates the crown base height from the vertical change in
+horizontal point spread. Points are binned by height (`bin_size`), and in
+each bin the mean horizontal distance of points from the bin's centroid is
+calculated. This profile is smoothed with a LOESS fit, and the crown base is
+taken as the bin where the smoothed spread increases most rapidly
+(i.e., where the bole transitions to branches).
 }
 \examples{
-# example code
 library(lidR)
 las = readLAS(system.file("extdata", "tree_0744.laz", package = "tReeTraits"))
 las = clean_las(las)
